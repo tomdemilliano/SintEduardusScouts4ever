@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /scans/{fileName} {
+      // Iedereen mag scans bekijken (de publieke "bekijk origineel formulier"-knop).
+      allow read: if true;
+      // Enkel ingelogde beheerders mogen uploaden/verwijderen.
+      allow write: if request.auth != null;
+    }
+  }
+}
