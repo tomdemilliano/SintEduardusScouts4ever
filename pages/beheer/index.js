@@ -79,6 +79,21 @@ function BeheerContent() {
               📍 Kampplaatsen
             </Link>
             <Link
+              href="/beheer/gerechten"
+              style={{
+                padding: '10px 20px',
+                borderRadius: radius.badge,
+                border: `1px solid ${colors.line}`,
+                color: colors.ink,
+                fontFamily: fonts.body,
+                fontWeight: 600,
+                fontSize: 13,
+                textDecoration: 'none',
+              }}
+            >
+              🍽️ Gerechten
+            </Link>
+            <Link
               href="/beheer/upload"
               style={{
                 padding: '10px 20px',
