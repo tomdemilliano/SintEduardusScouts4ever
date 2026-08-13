@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { EntryFactory, LocationFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
+import { toTextArray } from '../../lib/utils';
 import RequireAuth from '../../components/RequireAuth';
 
 export default function BeheerPage() {
@@ -48,18 +49,25 @@ function BeheerContent() {
     load();
   };
 
-  const isKampplaatsGekoppeld = (entry) => {
-    const naam = (entry.besteKampplaats || '').trim();
-    if (!naam) return null; // geen kampplaats ingevuld
-    return gekoppeldeLocaties.has(naam.toLowerCase());
+  /**
+   * Geeft de koppelstatus van de kampplaatsen van een entry terug:
+   * 'geen' (niets ingevuld), 'volledig' (alles gekoppeld), 'deels' of 'niet'.
+   */
+  const kampplaatsStatus = (entry) => {
+    const plaatsen = toTextArray(entry.besteKampplaats).filter(Boolean);
+    if (plaatsen.length === 0) return { type: 'geen', linked: 0, total: 0 };
+    const linked = plaatsen.filter((p) => gekoppeldeLocaties.has(p.trim().toLowerCase())).length;
+    if (linked === plaatsen.length) return { type: 'volledig', linked, total: plaatsen.length };
+    if (linked === 0) return { type: 'niet', linked, total: plaatsen.length };
+    return { type: 'deels', linked, total: plaatsen.length };
   };
 
   const gefilterd = useMemo(() => {
     return entries.filter((entry) => {
       if (statusFilter !== 'alle' && entry.status !== statusFilter) return false;
       if (kampplaatsFilter === 'niet-gekoppeld') {
-        const status = isKampplaatsGekoppeld(entry);
-        if (status !== false) return false; // enkel expliciet niet-gekoppelde tonen (wél ingevuld, geen match)
+        const { type } = kampplaatsStatus(entry);
+        if (type !== 'niet' && type !== 'deels') return false;
       }
       return true;
     });
@@ -67,7 +75,10 @@ function BeheerContent() {
   }, [entries, statusFilter, kampplaatsFilter, gekoppeldeLocaties]);
 
   const aantalDraft = entries.filter((e) => e.status !== 'published').length;
-  const aantalNietGekoppeld = entries.filter((e) => isKampplaatsGekoppeld(e) === false).length;
+  const aantalNietGekoppeld = entries.filter((e) => {
+    const { type } = kampplaatsStatus(e);
+    return type === 'niet' || type === 'deels';
+  }).length;
 
   return (
     <div style={{ minHeight: '100vh', background: colors.paper }}>
@@ -134,7 +145,7 @@ function BeheerContent() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {gefilterd.map((entry) => {
-            const kampplaatsStatus = isKampplaatsGekoppeld(entry);
+            const kampplaatsInfo = kampplaatsStatus(entry);
             return (
               <div
                 key={entry.id}
@@ -162,7 +173,7 @@ function BeheerContent() {
                     <span style={{ color: entry.status === 'published' ? colors.forest : colors.campfire, fontWeight: 600 }}>
                       {entry.status === 'published' ? 'Gepubliceerd' : 'Concept'}
                     </span>
-                    <KampplaatsBadge status={kampplaatsStatus} naam={entry.besteKampplaats} />
+                    <KampplaatsBadge status={kampplaatsInfo} />
                   </div>
                 </div>
 
@@ -235,14 +246,29 @@ function FilterButton({ active, onClick, children }) {
   );
 }
 
-function KampplaatsBadge({ status, naam }) {
-  if (status === null) {
+function KampplaatsBadge({ status }) {
+  if (status.type === 'geen') {
     return <span style={{ color: colors.inkMuted }}>· geen kampplaats ingevuld</span>;
   }
-  if (status === true) {
-    return <span style={{ color: colors.forest, fontWeight: 600 }}>· 📍 gekoppeld</span>;
+  if (status.type === 'volledig') {
+    return (
+      <span style={{ color: colors.forest, fontWeight: 600 }}>
+        · 📍 gekoppeld{status.total > 1 ? ` (${status.total})` : ''}
+      </span>
+    );
   }
-  return <span style={{ color: colors.stamp, fontWeight: 600 }}>· ⚠ kampplaats niet gekoppeld</span>;
+  if (status.type === 'deels') {
+    return (
+      <span style={{ color: colors.stamp, fontWeight: 600 }}>
+        · ⚠ {status.linked}/{status.total} kampplaatsen gekoppeld
+      </span>
+    );
+  }
+  return (
+    <span style={{ color: colors.stamp, fontWeight: 600 }}>
+      · ⚠ kampplaats{status.total > 1 ? 'en' : ''} niet gekoppeld
+    </span>
+  );
 }
 
 const secondaryLink = {
