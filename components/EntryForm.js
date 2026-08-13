@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { colors, fonts, radius } from '../lib/theme';
+import { toDishArray } from '../lib/utils';
+import DishListEditor from './DishListEditor';
 
 const FIELVELDEN = [
   { key: 'naam', label: 'Naam', placeholder: 'Voornaam Achternaam' },
@@ -8,7 +10,6 @@ const FIELVELDEN = [
   { key: 'periode', label: 'Lid in periode', placeholder: '1952 - 1955' },
   { key: 'leuksteActiviteit', label: 'Plezantste spel / strafste activiteit', placeholder: '', multiline: true },
   { key: 'besteKampplaats', label: 'Beste kampplaats ooit', placeholder: '', multiline: true },
-  { key: 'lekkersteEten', label: 'Lekkerste kamp-eten', placeholder: '', multiline: true },
 ];
 
 const empty = {
@@ -18,7 +19,7 @@ const empty = {
   periode: '',
   leuksteActiviteit: '',
   besteKampplaats: '',
-  lekkersteEten: '',
+  lekkersteEten: [''],
 };
 
 function fileToBase64(file) {
@@ -36,7 +37,10 @@ export default function EntryForm({
   onSave, // (fields, file|null) => Promise
   saveLabel = 'Opslaan als concept',
 }) {
-  const [fields, setFields] = useState(initialValues || empty);
+  const [fields, setFields] = useState(() => ({
+    ...(initialValues || empty),
+    lekkersteEten: toDishArray((initialValues || empty).lekkersteEten),
+  }));
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(initialScanUrl || null);
   const [recognizing, setRecognizing] = useState(false);
@@ -68,7 +72,11 @@ export default function EntryForm({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Herkenning mislukt');
-      setFields((prev) => ({ ...prev, ...data }));
+      setFields((prev) => ({
+        ...prev,
+        ...data,
+        lekkersteEten: toDishArray(data.lekkersteEten),
+      }));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -84,7 +92,11 @@ export default function EntryForm({
     setSaving(true);
     setError(null);
     try {
-      await onSave(fields, file);
+      const opgeschoond = {
+        ...fields,
+        lekkersteEten: fields.lekkersteEten.map((g) => g.trim()).filter(Boolean),
+      };
+      await onSave(opgeschoond, file);
     } catch (err) {
       setError(err.message || 'Opslaan mislukt');
     } finally {
@@ -222,6 +234,27 @@ export default function EntryForm({
             )}
           </div>
         ))}
+
+        <div>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: fonts.body,
+              fontSize: 12,
+              fontWeight: 600,
+              color: colors.inkMuted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: 4,
+            }}
+          >
+            Lekkerste kamp-eten
+          </label>
+          <DishListEditor
+            value={fields.lekkersteEten}
+            onChange={(lijst) => handleChange('lekkersteEten', lijst)}
+          />
+        </div>
       </div>
 
       <button
