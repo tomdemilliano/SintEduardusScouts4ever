@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { EntryFactory, LocationFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
-import { groupByField } from '../../lib/utils';
+import { groupByArrayField } from '../../lib/utils';
 import RequireAuth from '../../components/RequireAuth';
 
 const LocationPicker = dynamic(() => import('../../components/LocationPicker'), { ssr: false });
@@ -25,7 +25,7 @@ function LocatiesContent() {
   const load = async () => {
     setLoading(true);
     const [entries, locs] = await Promise.all([EntryFactory.getAll(), LocationFactory.getAll()]);
-    setGroepen(groupByField(entries, 'besteKampplaats'));
+    setGroepen(groupByArrayField(entries, 'besteKampplaats'));
     const byId = {};
     locs.forEach((l) => (byId[l.id] = l));
     setLocaties(byId);
