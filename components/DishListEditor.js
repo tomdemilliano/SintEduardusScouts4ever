@@ -1,6 +1,12 @@
 import { colors, fonts, radius } from '../lib/theme';
 
-export default function DishListEditor({ value, onChange, placeholder = 'bv. Stoemp met worst', mergeLabel = 'Samenvoegen met vorige' }) {
+export default function DishListEditor({
+  value,
+  onChange,
+  placeholder = 'bv. Stoemp met worst',
+  mergeLabel = 'Samenvoegen met vorige',
+  addLabel = '+ Gerecht toevoegen',
+}) {
   const gerechten = value.length ? value : [''];
 
   const update = (index, tekst) => {
@@ -86,7 +92,7 @@ export default function DishListEditor({ value, onChange, placeholder = 'bv. Sto
           cursor: 'pointer',
         }}
       >
-        + Gerecht toevoegen
+        {addLabel}
       </button>
     </div>
   );
