@@ -95,6 +95,30 @@ export default function HomePage({ }) {
             gap: 18,
           }}
         >
+          <Link href="/toevoegen" style={{ textDecoration: 'none' }}>
+            <div
+              style={{
+                background: colors.campfireLight,
+                border: `1.5px dashed ${colors.campfire}`,
+                borderRadius: radius.card,
+                padding: '22px 20px',
+                height: '100%',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              <div style={{ fontSize: 22, marginBottom: 8 }}>✍️</div>
+              <div style={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 700, color: colors.campfire, lineHeight: 1.3 }}>
+                Was jij lid maar sta hier nog niet tussen?
+              </div>
+              <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.ink, marginTop: 6, lineHeight: 1.4 }}>
+                Klik dan hier om jouw ervaringen toe te voegen.
+              </div>
+            </div>
+          </Link>
+
           {gefilterd.map((entry) => (
             <Link
               key={entry.id}
