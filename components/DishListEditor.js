@@ -1,6 +1,6 @@
 import { colors, fonts, radius } from '../lib/theme';
 
-export default function DishListEditor({ value, onChange }) {
+export default function DishListEditor({ value, onChange, placeholder = 'bv. Stoemp met worst', mergeLabel = 'Samenvoegen met vorige' }) {
   const gerechten = value.length ? value : [''];
 
   const update = (index, tekst) => {
@@ -34,7 +34,7 @@ export default function DishListEditor({ value, onChange }) {
           <input
             type="text"
             value={gerecht}
-            placeholder="bv. Stoemp met worst"
+            placeholder={placeholder}
             onChange={(e) => update(index, e.target.value)}
             style={{
               flex: 1,
@@ -52,7 +52,7 @@ export default function DishListEditor({ value, onChange }) {
             <button
               type="button"
               onClick={() => voegSamenMetVorige(index)}
-              title="Samenvoegen met vorig gerecht"
+              title={mergeLabel}
               style={iconBtn(colors.forest)}
             >
               ⬆
