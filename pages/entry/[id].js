@@ -4,11 +4,11 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { EntryFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
+import { toDishArray } from '../../lib/utils';
 
 const BLOKKEN = [
   { key: 'leuksteActiviteit', label: 'Het plezantste spel of de strafste activiteit' },
   { key: 'besteKampplaats', label: 'De beste kampplaats ooit' },
-  { key: 'lekkersteEten', label: 'Het lekkerste kamp-eten' },
 ];
 
 export default function EntryDetailPage() {
@@ -124,6 +124,44 @@ export default function EntryDetailPage() {
                     </div>
                   </div>
                 )
+            )}
+
+            {toDishArray(entry.lekkersteEten).filter(Boolean).length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    color: colors.forest,
+                    marginBottom: 6,
+                  }}
+                >
+                  Het lekkerste kamp-eten
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {toDishArray(entry.lekkersteEten)
+                    .filter(Boolean)
+                    .map((gerecht, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontFamily: fonts.display,
+                          fontSize: 16,
+                          fontWeight: 600,
+                          color: colors.ink,
+                          background: colors.campfireLight,
+                          borderRadius: radius.badge,
+                          padding: '5px 14px',
+                        }}
+                      >
+                        {gerecht}
+                      </span>
+                    ))}
+                </div>
+              </div>
             )}
           </div>
 
