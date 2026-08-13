@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { EntryFactory, LocationFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
-import { groupByField } from '../lib/utils';
+import { groupByArrayField } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
 
 const CampMap = dynamic(() => import('../components/CampMap'), { ssr: false });
@@ -16,7 +16,7 @@ export default function KampplaatsenPage() {
   useEffect(() => {
     Promise.all([EntryFactory.getPublished(), LocationFactory.getAll()]).then(
       ([entries, locations]) => {
-        const grouped = groupByField(entries, 'besteKampplaats');
+        const grouped = groupByArrayField(entries, 'besteKampplaats');
         setGroepen(grouped);
 
         const locByNorm = {};
