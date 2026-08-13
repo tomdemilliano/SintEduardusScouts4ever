@@ -11,7 +11,7 @@ const empty = {
   geboortejaar: '',
   totemnaam: '',
   periode: '',
-  leuksteActiviteit: '',
+  leuksteActiviteit: [''],
   besteKampplaats: [''],
   lekkersteEten: [''],
 };
@@ -61,6 +61,7 @@ export default function ToevoegenPage() {
     try {
       await EntryFactory.create({
         ...fields,
+        leuksteActiviteit: fields.leuksteActiviteit.map((a) => a.trim()).filter(Boolean),
         besteKampplaats: fields.besteKampplaats.map((k) => k.trim()).filter(Boolean),
         lekkersteEten: fields.lekkersteEten.map((g) => g.trim()).filter(Boolean),
       });
@@ -160,12 +161,17 @@ export default function ToevoegenPage() {
           <Veld label="Geboortejaar" value={fields.geboortejaar} onChange={(v) => handleChange('geboortejaar', v)} placeholder="19.." />
           <Veld label="Totemnaam" value={fields.totemnaam} onChange={(v) => handleChange('totemnaam', v)} />
           <Veld label="Lid in periode" value={fields.periode} onChange={(v) => handleChange('periode', v)} placeholder="1952 - 1955" />
-          <Veld
-            label="Plezantste spel / strafste activiteit"
-            value={fields.leuksteActiviteit}
-            onChange={(v) => handleChange('leuksteActiviteit', v)}
-            multiline
-          />
+
+          <div>
+            <Label>Plezantste spel / strafste activiteit</Label>
+            <DishListEditor
+              value={fields.leuksteActiviteit}
+              onChange={(lijst) => handleChange('leuksteActiviteit', lijst)}
+              placeholder="bv. Toneelspelen"
+              mergeLabel="Samenvoegen met vorige activiteit"
+              addLabel="+ Activiteit toevoegen"
+            />
+          </div>
 
           <div>
             <Label>Beste kampplaats ooit</Label>
@@ -174,6 +180,7 @@ export default function ToevoegenPage() {
               onChange={(lijst) => handleChange('besteKampplaats', lijst)}
               placeholder="bv. Falmignoul (Walzin)"
               mergeLabel="Samenvoegen met vorige kampplaats"
+              addLabel="+ Kampplaats toevoegen"
             />
           </div>
 
@@ -183,6 +190,7 @@ export default function ToevoegenPage() {
               value={fields.lekkersteEten}
               onChange={(lijst) => handleChange('lekkersteEten', lijst)}
               mergeLabel="Samenvoegen met vorig gerecht"
+              addLabel="+ Gerecht toevoegen"
             />
           </div>
 
