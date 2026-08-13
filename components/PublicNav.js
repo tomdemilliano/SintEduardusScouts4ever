@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/kampplaatsen', label: 'Kampplaatsen' },
   { href: '/eten', label: 'Eten' },
   { href: '/spellen', label: 'Spellen' },
+  { href: '/toevoegen', label: 'Zelf toevoegen' },
 ];
 
 export default function PublicNav() {
