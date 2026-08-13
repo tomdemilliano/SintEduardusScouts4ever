@@ -11,5 +11,11 @@ service cloud.firestore {
       // beheerder-account via Firebase Auth.
       allow read, write: if request.auth != null;
     }
+
+    match /locations/{locationId} {
+      // Coördinaten van kampplaatsen mogen publiek gelezen worden (voor de kaart).
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }
