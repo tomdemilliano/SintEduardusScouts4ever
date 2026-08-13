@@ -43,11 +43,7 @@ export default function EntryForm({
     if (!f) return;
     setFile(f);
     setError(null);
-    if (f.type.startsWith('image/')) {
-      setPreviewUrl(URL.createObjectURL(f));
-    } else {
-      setPreviewUrl(null); // pdf: geen inline preview, wel herkenning mogelijk
-    }
+    setPreviewUrl(URL.createObjectURL(f)); // werkt zowel voor afbeeldingen als pdf's
   };
 
   const handleRecognize = async () => {
@@ -129,16 +125,35 @@ export default function EntryForm({
         </label>
 
         {previewUrl && (
-          <img
-            src={previewUrl}
-            alt="scan preview"
-            style={{ maxWidth: '100%', maxHeight: 320, borderRadius: radius.card, marginTop: 12, border: `1px solid ${colors.line}` }}
-          />
-        )}
-        {file && !previewUrl && (
-          <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, marginTop: 8 }}>
-            📄 {file.name}
-          </p>
+          <div style={{ marginTop: 12 }}>
+            {(!file || file.type.startsWith('image/')) ? (
+              <img
+                src={previewUrl}
+                alt="scan preview"
+                style={{ maxWidth: '100%', maxHeight: 320, borderRadius: radius.card, display: 'block', border: `1px solid ${colors.line}` }}
+              />
+            ) : (
+              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, margin: 0 }}>
+                📄 {file.name}
+              </p>
+            )}
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-block',
+                marginTop: 8,
+                fontFamily: fonts.body,
+                fontSize: 12,
+                fontWeight: 600,
+                color: colors.forest,
+                textDecoration: 'none',
+              }}
+            >
+              ⤢ Open scan in volledig scherm
+            </a>
+          </div>
         )}
 
         {file && (
