@@ -41,10 +41,12 @@ Het formulier bevat deze velden (in het Nederlands, sommige met drukletters voor
 - Ik was lid in deze periode (ongeveer) -> een jaartallenrange zoals "1952-1955"
 - Het plezantste spel of de strafste activiteit tijdens mijn scoutscarrière
 - Dit was voor mij de beste kampplaats ooit
-- Het lekkerste kamp-eten was voor mij
+- Het lekkerste kamp-eten was voor mij -> kan één of meerdere gerechten bevatten
 
-Lees het handschrift zo nauwkeurig mogelijk. Als een veld leeg is gelaten, geef dan een lege string terug.
+Lees het handschrift zo nauwkeurig mogelijk. Als een veld leeg is gelaten, geef dan een lege string (of lege array voor lekkersteEten) terug.
 Corrigeer voor de hand liggende spellingsfouten niet, transcribeer wat er letterlijk staat, maar corrigeer wel evidente OCR-achtige leesfouten in eigen namen als de context dat logisch maakt.
+
+Voor "lekkersteEten": dit is vaak één samengesteld gerecht (bv. "stoofvlees met frieten"), soms een opsomming van meerdere losse gerechten (bv. gescheiden door "en", een komma, of nieuwe regel). Geef elk apart gerecht als los element in een array terug — voeg woorden die samen één gerecht vormen NIET los van elkaar toe (bv. "stoofvlees met frieten" is één element, niet drie).
 
 Geef ALLEEN geldige JSON terug, zonder uitleg, zonder markdown-codeblok, in exact dit formaat:
 {
@@ -54,7 +56,7 @@ Geef ALLEEN geldige JSON terug, zonder uitleg, zonder markdown-codeblok, in exac
   "periode": "",
   "leuksteActiviteit": "",
   "besteKampplaats": "",
-  "lekkersteEten": ""
+  "lekkersteEten": []
 }`;
 
   try {
