@@ -62,21 +62,38 @@ function BeheerContent() {
               {entries.filter((e) => e.status === 'published').length} gepubliceerd
             </p>
           </div>
-          <Link
-            href="/beheer/upload"
-            style={{
-              padding: '10px 20px',
-              borderRadius: radius.badge,
-              background: colors.campfire,
-              color: colors.white,
-              fontFamily: fonts.body,
-              fontWeight: 600,
-              fontSize: 13,
-              textDecoration: 'none',
-            }}
-          >
-            + Nieuwe scan
-          </Link>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link
+              href="/beheer/locaties"
+              style={{
+                padding: '10px 20px',
+                borderRadius: radius.badge,
+                border: `1px solid ${colors.line}`,
+                color: colors.ink,
+                fontFamily: fonts.body,
+                fontWeight: 600,
+                fontSize: 13,
+                textDecoration: 'none',
+              }}
+            >
+              📍 Kampplaatsen
+            </Link>
+            <Link
+              href="/beheer/upload"
+              style={{
+                padding: '10px 20px',
+                borderRadius: radius.badge,
+                background: colors.campfire,
+                color: colors.white,
+                fontFamily: fonts.body,
+                fontWeight: 600,
+                fontSize: 13,
+                textDecoration: 'none',
+              }}
+            >
+              + Nieuwe scan
+            </Link>
+          </div>
         </div>
 
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
