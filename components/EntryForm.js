@@ -8,7 +8,6 @@ const FIELVELDEN = [
   { key: 'geboortejaar', label: 'Geboortejaar', placeholder: '19..' },
   { key: 'totemnaam', label: 'Totemnaam', placeholder: '' },
   { key: 'periode', label: 'Lid in periode', placeholder: '1952 - 1955' },
-  { key: 'leuksteActiviteit', label: 'Plezantste spel / strafste activiteit', placeholder: '', multiline: true },
 ];
 
 const empty = {
@@ -16,10 +15,12 @@ const empty = {
   geboortejaar: '',
   totemnaam: '',
   periode: '',
-  leuksteActiviteit: '',
+  leuksteActiviteit: [''],
   besteKampplaats: [''],
   lekkersteEten: [''],
 };
+
+const ARRAY_VELDEN = ['leuksteActiviteit', 'besteKampplaats', 'lekkersteEten'];
 
 export default function EntryForm({
   initialValues,
@@ -27,11 +28,14 @@ export default function EntryForm({
   onSave, // (fields, file|null) => Promise
   saveLabel = 'Opslaan als concept',
 }) {
-  const [fields, setFields] = useState(() => ({
-    ...(initialValues || empty),
-    besteKampplaats: toDishArray((initialValues || empty).besteKampplaats),
-    lekkersteEten: toDishArray((initialValues || empty).lekkersteEten),
-  }));
+  const [fields, setFields] = useState(() => {
+    const basis = initialValues || empty;
+    const genormaliseerd = { ...basis };
+    ARRAY_VELDEN.forEach((key) => {
+      genormaliseerd[key] = toDishArray(basis[key]);
+    });
+    return genormaliseerd;
+  });
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(initialScanUrl || null);
   const [recognizing, setRecognizing] = useState(false);
@@ -59,12 +63,11 @@ export default function EntryForm({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Herkenning mislukt');
-      setFields((prev) => ({
-        ...prev,
-        ...data,
-        besteKampplaats: toDishArray(data.besteKampplaats),
-        lekkersteEten: toDishArray(data.lekkersteEten),
-      }));
+      const genormaliseerd = { ...data };
+      ARRAY_VELDEN.forEach((key) => {
+        genormaliseerd[key] = toDishArray(data[key]);
+      });
+      setFields((prev) => ({ ...prev, ...genormaliseerd }));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,11 +83,10 @@ export default function EntryForm({
     setSaving(true);
     setError(null);
     try {
-      const opgeschoond = {
-        ...fields,
-        besteKampplaats: fields.besteKampplaats.map((k) => k.trim()).filter(Boolean),
-        lekkersteEten: fields.lekkersteEten.map((g) => g.trim()).filter(Boolean),
-      };
+      const opgeschoond = { ...fields };
+      ARRAY_VELDEN.forEach((key) => {
+        opgeschoond[key] = fields[key].map((v) => v.trim()).filter(Boolean);
+      });
       await onSave(opgeschoond, file);
     } catch (err) {
       setError(err.message || 'Opslaan mislukt');
@@ -244,47 +246,34 @@ export default function EntryForm({
         ))}
 
         <div>
-          <label
-            style={{
-              display: 'block',
-              fontFamily: fonts.body,
-              fontSize: 12,
-              fontWeight: 600,
-              color: colors.inkMuted,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: 4,
-            }}
-          >
-            Beste kampplaats ooit
-          </label>
+          <VeldLabel>Plezantste spel / strafste activiteit</VeldLabel>
+          <DishListEditor
+            value={fields.leuksteActiviteit}
+            onChange={(lijst) => handleChange('leuksteActiviteit', lijst)}
+            placeholder="bv. Toneelspelen"
+            mergeLabel="Samenvoegen met vorige activiteit"
+            addLabel="+ Activiteit toevoegen"
+          />
+        </div>
+
+        <div>
+          <VeldLabel>Beste kampplaats ooit</VeldLabel>
           <DishListEditor
             value={fields.besteKampplaats}
             onChange={(lijst) => handleChange('besteKampplaats', lijst)}
             placeholder="bv. Falmignoul (Walzin)"
             mergeLabel="Samenvoegen met vorige kampplaats"
+            addLabel="+ Kampplaats toevoegen"
           />
         </div>
 
         <div>
-          <label
-            style={{
-              display: 'block',
-              fontFamily: fonts.body,
-              fontSize: 12,
-              fontWeight: 600,
-              color: colors.inkMuted,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: 4,
-            }}
-          >
-            Lekkerste kamp-eten
-          </label>
+          <VeldLabel>Lekkerste kamp-eten</VeldLabel>
           <DishListEditor
             value={fields.lekkersteEten}
             onChange={(lijst) => handleChange('lekkersteEten', lijst)}
             mergeLabel="Samenvoegen met vorig gerecht"
+            addLabel="+ Gerecht toevoegen"
           />
         </div>
       </div>
@@ -308,5 +297,24 @@ export default function EntryForm({
         {saving ? 'Bezig met opslaan…' : saveLabel}
       </button>
     </div>
+  );
+}
+
+function VeldLabel({ children }) {
+  return (
+    <label
+      style={{
+        display: 'block',
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 600,
+        color: colors.inkMuted,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        marginBottom: 4,
+      }}
+    >
+      {children}
+    </label>
   );
 }
