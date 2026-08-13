@@ -9,7 +9,6 @@ const FIELVELDEN = [
   { key: 'totemnaam', label: 'Totemnaam', placeholder: '' },
   { key: 'periode', label: 'Lid in periode', placeholder: '1952 - 1955' },
   { key: 'leuksteActiviteit', label: 'Plezantste spel / strafste activiteit', placeholder: '', multiline: true },
-  { key: 'besteKampplaats', label: 'Beste kampplaats ooit', placeholder: '', multiline: true },
 ];
 
 const empty = {
@@ -18,7 +17,7 @@ const empty = {
   totemnaam: '',
   periode: '',
   leuksteActiviteit: '',
-  besteKampplaats: '',
+  besteKampplaats: [''],
   lekkersteEten: [''],
 };
 
@@ -30,6 +29,7 @@ export default function EntryForm({
 }) {
   const [fields, setFields] = useState(() => ({
     ...(initialValues || empty),
+    besteKampplaats: toDishArray((initialValues || empty).besteKampplaats),
     lekkersteEten: toDishArray((initialValues || empty).lekkersteEten),
   }));
   const [file, setFile] = useState(null);
@@ -62,6 +62,7 @@ export default function EntryForm({
       setFields((prev) => ({
         ...prev,
         ...data,
+        besteKampplaats: toDishArray(data.besteKampplaats),
         lekkersteEten: toDishArray(data.lekkersteEten),
       }));
     } catch (err) {
@@ -81,6 +82,7 @@ export default function EntryForm({
     try {
       const opgeschoond = {
         ...fields,
+        besteKampplaats: fields.besteKampplaats.map((k) => k.trim()).filter(Boolean),
         lekkersteEten: fields.lekkersteEten.map((g) => g.trim()).filter(Boolean),
       };
       await onSave(opgeschoond, file);
@@ -254,11 +256,35 @@ export default function EntryForm({
               marginBottom: 4,
             }}
           >
+            Beste kampplaats ooit
+          </label>
+          <DishListEditor
+            value={fields.besteKampplaats}
+            onChange={(lijst) => handleChange('besteKampplaats', lijst)}
+            placeholder="bv. Falmignoul (Walzin)"
+            mergeLabel="Samenvoegen met vorige kampplaats"
+          />
+        </div>
+
+        <div>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: fonts.body,
+              fontSize: 12,
+              fontWeight: 600,
+              color: colors.inkMuted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: 4,
+            }}
+          >
             Lekkerste kamp-eten
           </label>
           <DishListEditor
             value={fields.lekkersteEten}
             onChange={(lijst) => handleChange('lekkersteEten', lijst)}
+            mergeLabel="Samenvoegen met vorig gerecht"
           />
         </div>
       </div>
