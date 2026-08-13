@@ -6,10 +6,6 @@ import { EntryFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import { toDishArray } from '../../lib/utils';
 
-const BLOKKEN = [
-  { key: 'leuksteActiviteit', label: 'Het plezantste spel of de strafste activiteit' },
-];
-
 export default function EntryDetailPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -101,28 +97,43 @@ export default function EntryDetailPage() {
           <div style={{ height: 1, background: colors.line, margin: '26px 0' }} />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-            {BLOKKEN.map(
-              (b) =>
-                entry[b.key] && (
-                  <div key={b.key}>
-                    <div
-                      style={{
-                        fontFamily: fonts.body,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        color: colors.forest,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {b.label}
-                    </div>
-                    <div style={{ fontFamily: fonts.display, fontSize: 19, color: colors.ink, lineHeight: 1.4 }}>
-                      {entry[b.key]}
-                    </div>
-                  </div>
-                )
+            {toDishArray(entry.leuksteActiviteit).filter(Boolean).length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    color: colors.forest,
+                    marginBottom: 6,
+                  }}
+                >
+                  Het plezantste spel of de strafste activiteit
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {toDishArray(entry.leuksteActiviteit)
+                    .filter(Boolean)
+                    .map((activiteit, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontFamily: fonts.display,
+                          fontSize: 16,
+                          fontWeight: 600,
+                          color: colors.ink,
+                          background: colors.white,
+                          border: `1px solid ${colors.line}`,
+                          borderRadius: radius.badge,
+                          padding: '5px 14px',
+                        }}
+                      >
+                        {activiteit}
+                      </span>
+                    ))}
+                </div>
+              </div>
             )}
 
             {toDishArray(entry.besteKampplaats).filter(Boolean).length > 0 && (
