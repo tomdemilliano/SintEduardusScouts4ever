@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory } from '../../lib/dbSchema';
+import { EntryFactory, LocationFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import RequireAuth from '../../components/RequireAuth';
 
@@ -15,12 +15,16 @@ export default function BeheerPage() {
 
 function BeheerContent() {
   const [entries, setEntries] = useState([]);
+  const [gekoppeldeLocaties, setGekoppeldeLocaties] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('alle'); // alle | draft | published
+  const [kampplaatsFilter, setKampplaatsFilter] = useState('alle'); // alle | niet-gekoppeld
 
   const load = async () => {
     setLoading(true);
-    const all = await EntryFactory.getAll();
+    const [all, locaties] = await Promise.all([EntryFactory.getAll(), LocationFactory.getAll()]);
     setEntries(all);
+    setGekoppeldeLocaties(new Set(locaties.map((l) => l.id))); // l.id = genormaliseerde naam
     setLoading(false);
   };
 
@@ -44,6 +48,27 @@ function BeheerContent() {
     load();
   };
 
+  const isKampplaatsGekoppeld = (entry) => {
+    const naam = (entry.besteKampplaats || '').trim();
+    if (!naam) return null; // geen kampplaats ingevuld
+    return gekoppeldeLocaties.has(naam.toLowerCase());
+  };
+
+  const gefilterd = useMemo(() => {
+    return entries.filter((entry) => {
+      if (statusFilter !== 'alle' && entry.status !== statusFilter) return false;
+      if (kampplaatsFilter === 'niet-gekoppeld') {
+        const status = isKampplaatsGekoppeld(entry);
+        if (status !== false) return false; // enkel expliciet niet-gekoppelde tonen (wél ingevuld, geen match)
+      }
+      return true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, statusFilter, kampplaatsFilter, gekoppeldeLocaties]);
+
+  const aantalDraft = entries.filter((e) => e.status !== 'published').length;
+  const aantalNietGekoppeld = entries.filter((e) => isKampplaatsGekoppeld(e) === false).length;
+
   return (
     <div style={{ minHeight: '100vh', background: colors.paper }}>
       <Head>
@@ -52,7 +77,7 @@ function BeheerContent() {
       </Head>
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '48px 20px 80px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: 0 }}>
               Beheer
@@ -63,132 +88,195 @@ function BeheerContent() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Link
-              href="/beheer/locaties"
-              style={{
-                padding: '10px 20px',
-                borderRadius: radius.badge,
-                border: `1px solid ${colors.line}`,
-                color: colors.ink,
-                fontFamily: fonts.body,
-                fontWeight: 600,
-                fontSize: 13,
-                textDecoration: 'none',
-              }}
-            >
+            <Link href="/beheer/locaties" style={secondaryLink}>
               📍 Kampplaatsen
             </Link>
-            <Link
-              href="/beheer/gerechten"
-              style={{
-                padding: '10px 20px',
-                borderRadius: radius.badge,
-                border: `1px solid ${colors.line}`,
-                color: colors.ink,
-                fontFamily: fonts.body,
-                fontWeight: 600,
-                fontSize: 13,
-                textDecoration: 'none',
-              }}
-            >
+            <Link href="/beheer/gerechten" style={secondaryLink}>
               🍽️ Gerechten
             </Link>
-            <Link
-              href="/beheer/upload"
-              style={{
-                padding: '10px 20px',
-                borderRadius: radius.badge,
-                background: colors.campfire,
-                color: colors.white,
-                fontFamily: fonts.body,
-                fontWeight: 600,
-                fontSize: 13,
-                textDecoration: 'none',
-              }}
-            >
-              + Nieuwe scan
+            <Link href="/beheer/upload" style={secondaryLink}>
+              + Eén scan
+            </Link>
+            <Link href="/beheer/bulk-upload" style={primaryLink}>
+              + Meerdere scans
             </Link>
           </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 24, alignItems: 'center' }}>
+          <FilterGroup label="Status">
+            <FilterButton active={statusFilter === 'alle'} onClick={() => setStatusFilter('alle')}>
+              Alle
+            </FilterButton>
+            <FilterButton active={statusFilter === 'draft'} onClick={() => setStatusFilter('draft')}>
+              Concepten {aantalDraft > 0 && `(${aantalDraft})`}
+            </FilterButton>
+            <FilterButton active={statusFilter === 'published'} onClick={() => setStatusFilter('published')}>
+              Gepubliceerd
+            </FilterButton>
+          </FilterGroup>
+
+          <FilterGroup label="Kampplaats">
+            <FilterButton active={kampplaatsFilter === 'alle'} onClick={() => setKampplaatsFilter('alle')}>
+              Alle
+            </FilterButton>
+            <FilterButton
+              active={kampplaatsFilter === 'niet-gekoppeld'}
+              onClick={() => setKampplaatsFilter('niet-gekoppeld')}
+            >
+              Niet gekoppeld {aantalNietGekoppeld > 0 && `(${aantalNietGekoppeld})`}
+            </FilterButton>
+          </FilterGroup>
         </div>
 
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {entries.map((entry) => (
-            <div
-              key={entry.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                padding: '14px 18px',
-                background: colors.paperCard,
-                border: `1px solid ${colors.line}`,
-                borderRadius: radius.card,
-                flexWrap: 'wrap',
-              }}
-            >
-              <div>
-                <div style={{ fontFamily: fonts.display, fontSize: 18, fontWeight: 600, color: colors.ink }}>
-                  {entry.naam || '(naamloos)'}{' '}
-                  <span style={{ fontFamily: fonts.body, fontSize: 13, fontWeight: 400, color: colors.inkMuted }}>
-                    {entry.totemnaam && `— ${entry.totemnaam}`}
-                  </span>
+          {gefilterd.map((entry) => {
+            const kampplaatsStatus = isKampplaatsGekoppeld(entry);
+            return (
+              <div
+                key={entry.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  padding: '14px 18px',
+                  background: colors.paperCard,
+                  border: `1px solid ${colors.line}`,
+                  borderRadius: radius.card,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div>
+                  <div style={{ fontFamily: fonts.display, fontSize: 18, fontWeight: 600, color: colors.ink }}>
+                    {entry.naam || '(naamloos)'}{' '}
+                    <span style={{ fontFamily: fonts.body, fontSize: 13, fontWeight: 400, color: colors.inkMuted }}>
+                      {entry.totemnaam && `— ${entry.totemnaam}`}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, marginTop: 2, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span>{entry.periode || 'periode onbekend'}</span>
+                    <span style={{ color: entry.status === 'published' ? colors.forest : colors.campfire, fontWeight: 600 }}>
+                      {entry.status === 'published' ? 'Gepubliceerd' : 'Concept'}
+                    </span>
+                    <KampplaatsBadge status={kampplaatsStatus} naam={entry.besteKampplaats} />
+                  </div>
                 </div>
-                <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
-                  {entry.periode || 'periode onbekend'} ·{' '}
-                  <span style={{ color: entry.status === 'published' ? colors.forest : colors.campfire, fontWeight: 600 }}>
-                    {entry.status === 'published' ? 'Gepubliceerd' : 'Concept'}
-                  </span>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <Link
-                  href={`/beheer/${entry.id}`}
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: radius.badge,
-                    border: `1px solid ${colors.line}`,
-                    color: colors.ink,
-                    fontFamily: fonts.body,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Bewerken
-                </Link>
-                {entry.status === 'published' ? (
-                  <button
-                    onClick={() => handleUnpublish(entry.id)}
-                    style={btnStyle(colors.inkMuted)}
-                  >
-                    Depubliceren
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Link href={`/beheer/${entry.id}`} style={btnStyleOutline}>
+                    Bewerken
+                  </Link>
+                  {entry.status === 'published' ? (
+                    <button onClick={() => handleUnpublish(entry.id)} style={btnStyle(colors.inkMuted)}>
+                      Depubliceren
+                    </button>
+                  ) : (
+                    <button onClick={() => handlePublish(entry.id)} style={btnStyle(colors.forest)}>
+                      Publiceren
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(entry)} style={btnStyle(colors.stamp)}>
+                    Verwijderen
                   </button>
-                ) : (
-                  <button onClick={() => handlePublish(entry.id)} style={btnStyle(colors.forest)}>
-                    Publiceren
-                  </button>
-                )}
-                <button onClick={() => handleDelete(entry)} style={btnStyle(colors.stamp)}>
-                  Verwijderen
-                </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
+        {!loading && gefilterd.length === 0 && entries.length > 0 && (
+          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>
+            Geen formulieren die aan deze filters voldoen.
+          </p>
+        )}
         {!loading && entries.length === 0 && (
           <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>
-            Nog geen formulieren toegevoegd. Klik op "+ Nieuwe scan" om te starten.
+            Nog geen formulieren toegevoegd.
           </p>
         )}
       </div>
     </div>
   );
 }
+
+function FilterGroup({ label, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontFamily: fonts.body, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.inkMuted, marginRight: 2 }}>
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function FilterButton({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '5px 12px',
+        borderRadius: 999,
+        border: `1px solid ${active ? colors.forest : colors.line}`,
+        background: active ? colors.forest : 'transparent',
+        color: active ? colors.white : colors.inkMuted,
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function KampplaatsBadge({ status, naam }) {
+  if (status === null) {
+    return <span style={{ color: colors.inkMuted }}>· geen kampplaats ingevuld</span>;
+  }
+  if (status === true) {
+    return <span style={{ color: colors.forest, fontWeight: 600 }}>· 📍 gekoppeld</span>;
+  }
+  return <span style={{ color: colors.stamp, fontWeight: 600 }}>· ⚠ kampplaats niet gekoppeld</span>;
+}
+
+const secondaryLink = {
+  padding: '10px 20px',
+  borderRadius: 999,
+  border: `1px solid ${colors.line}`,
+  color: colors.ink,
+  fontFamily: fonts.body,
+  fontWeight: 600,
+  fontSize: 13,
+  textDecoration: 'none',
+};
+
+const primaryLink = {
+  padding: '10px 20px',
+  borderRadius: 999,
+  background: colors.campfire,
+  color: colors.white,
+  fontFamily: fonts.body,
+  fontWeight: 600,
+  fontSize: 13,
+  textDecoration: 'none',
+};
+
+const btnStyleOutline = {
+  padding: '7px 14px',
+  borderRadius: 999,
+  border: `1px solid ${colors.line}`,
+  color: colors.ink,
+  fontFamily: fonts.body,
+  fontSize: 12,
+  fontWeight: 600,
+  textDecoration: 'none',
+};
 
 function btnStyle(color) {
   return {
