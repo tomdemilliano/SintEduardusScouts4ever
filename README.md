@@ -126,6 +126,23 @@ op via de ingebouwde zoekfunctie (gebruikt OpenStreetMap/Nominatim, geen
 API-key nodig) en kies het juiste resultaat. Plaatsen die je niet koppelt
 verschijnen gewoon niet op de kaart, maar wel in de tekstlijst.
 
+## Zelf toevoegen (publiek formulier)
+
+`/toevoegen` — voor mensen die geen papieren formulier invulden op de
+reünie maar toch in het vriendenboekje willen. Dezelfde vragen als op het
+scanformulier, zonder scan-upload uiteraard.
+
+Bot-wering: een verborgen honeypot-veld (bots vullen dit vaak automatisch
+in, mensen zien het niet) plus een simpele rekensom. Dit is bewust
+lichtgewicht — geen externe dienst zoals reCAPTCHA nodig — omdat de
+echte garantie de handmatige goedkeuring is: elke inzending komt als
+**concept** binnen op `/beheer`, exact zoals een geüploade scan, en wordt
+pas publiek zichtbaar nadat jij ze publiceert.
+
+`firestore.rules` staat een niet-ingelogde bezoeker toe om een nieuwe
+entry aan te maken, maar enkel als concept, zonder scan, en met beperkte
+veldgroottes — lezen, bewerken of verwijderen kan een bezoeker niet.
+
 ## Nieuwe Firestore-collectie
 
 Naast `entries` is er nu ook een `locations`-collectie
