@@ -67,6 +67,22 @@ export default function KampplaatsenPage() {
           </div>
         )}
 
+        {!loading && groepen.length > 0 && pins.length === 0 && (
+          <div
+            style={{
+              marginBottom: 32,
+              border: `1px dashed ${colors.line}`,
+              borderRadius: radius.card,
+              padding: '24px 20px',
+              textAlign: 'center',
+            }}
+          >
+            <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, margin: 0 }}>
+              Er zijn nog geen kampplaatsen aan de kaart gekoppeld.
+            </p>
+          </div>
+        )}
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {groepen.map((groep) => (
             <div
