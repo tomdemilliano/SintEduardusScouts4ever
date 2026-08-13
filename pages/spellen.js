@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { EntryFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
-import { groupByField } from '../lib/utils';
+import { groupByArrayField } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
 
 export default function SpellenPage() {
@@ -11,7 +11,7 @@ export default function SpellenPage() {
 
   useEffect(() => {
     EntryFactory.getPublished().then((entries) => {
-      setGroepen(groupByField(entries, 'leuksteActiviteit'));
+      setGroepen(groupByArrayField(entries, 'leuksteActiviteit'));
       setLoading(false);
     });
   }, []);
