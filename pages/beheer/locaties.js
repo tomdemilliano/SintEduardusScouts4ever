@@ -20,6 +20,7 @@ function LocatiesContent() {
   const [groepen, setGroepen] = useState([]);
   const [locaties, setLocaties] = useState({});
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('alle'); // alle | niet-gekoppeld
 
   const load = async () => {
     setLoading(true);
@@ -35,6 +36,10 @@ function LocatiesContent() {
     load();
   }, []);
 
+  const isGekoppeld = (groep) => Boolean(locaties[groep.label.trim().toLowerCase()]);
+  const gefilterd = filter === 'niet-gekoppeld' ? groepen.filter((g) => !isGekoppeld(g)) : groepen;
+  const aantalNietGekoppeld = groepen.filter((g) => !isGekoppeld(g)).length;
+
   return (
     <div style={{ minHeight: '100vh', background: colors.paper }}>
       <Head>
@@ -49,7 +54,7 @@ function LocatiesContent() {
         <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: '12px 0 6px' }}>
           Kampplaatsen op de kaart
         </h1>
-        <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 28 }}>
+        <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 20 }}>
           Zoek elke kampplaats op, kies "Kies op kaart" om de locatie zelf aan
           te klikken of te verslepen, of vul de coördinaten manueel in (bv.
           via rechtsklik op Google Maps → coördinaten kopiëren) als de
@@ -57,10 +62,22 @@ function LocatiesContent() {
           coördinaten verschijnen gewoon niet op de kaart.
         </p>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+          <span style={{ fontFamily: fonts.body, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.inkMuted, marginRight: 2 }}>
+            Filter
+          </span>
+          <FilterButton active={filter === 'alle'} onClick={() => setFilter('alle')}>
+            Alle ({groepen.length})
+          </FilterButton>
+          <FilterButton active={filter === 'niet-gekoppeld'} onClick={() => setFilter('niet-gekoppeld')}>
+            Nog te koppelen {aantalNietGekoppeld > 0 && `(${aantalNietGekoppeld})`}
+          </FilterButton>
+        </div>
+
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {groepen.map((groep) => (
+          {gefilterd.map((groep) => (
             <LocationCard
               key={groep.label}
               groep={groep}
@@ -69,8 +86,35 @@ function LocatiesContent() {
             />
           ))}
         </div>
+
+        {!loading && gefilterd.length === 0 && groepen.length > 0 && (
+          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>
+            Alle kampplaatsen zijn gekoppeld. 🎉
+          </p>
+        )}
       </div>
     </div>
+  );
+}
+
+function FilterButton({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '5px 12px',
+        borderRadius: 999,
+        border: `1px solid ${active ? colors.forest : colors.line}`,
+        background: active ? colors.forest : 'transparent',
+        color: active ? colors.white : colors.inkMuted,
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
