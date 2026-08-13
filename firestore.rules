@@ -17,5 +17,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    match /dishes/{dishId} {
+      // Receptkoppelingen mogen publiek gelezen worden (voor de klikbare gerechten).
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }
