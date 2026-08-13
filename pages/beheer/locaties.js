@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { EntryFactory, LocationFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import { groupByField } from '../../lib/utils';
 import RequireAuth from '../../components/RequireAuth';
+
+const LocationPicker = dynamic(() => import('../../components/LocationPicker'), { ssr: false });
 
 export default function LocatiesPage() {
   return (
@@ -47,9 +50,10 @@ function LocatiesContent() {
           Kampplaatsen op de kaart
         </h1>
         <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 28 }}>
-          Zoek elke kampplaats op, of vul de coördinaten manueel in als de
-          automatische zoekfunctie de juiste plek niet vindt (bv. via
-          rechtsklik op Google Maps → coördinaten kopiëren). Plaatsen zonder
+          Zoek elke kampplaats op, kies "Kies op kaart" om de locatie zelf aan
+          te klikken of te verslepen, of vul de coördinaten manueel in (bv.
+          via rechtsklik op Google Maps → coördinaten kopiëren) als de
+          automatische zoekfunctie de juiste plek niet vindt. Plaatsen zonder
           coördinaten verschijnen gewoon niet op de kaart.
         </p>
 
@@ -78,6 +82,7 @@ function LocationCard({ groep, gekoppeld, onChanged }) {
   const [lng, setLng] = useState(gekoppeld ? String(gekoppeld.lng) : '');
   const [opslaanBezig, setOpslaanBezig] = useState(false);
   const [foutmelding, setFoutmelding] = useState(null);
+  const [kaartOpen, setKaartOpen] = useState(false);
 
   const zoekLocatie = async () => {
     setZoekend(true);
@@ -151,7 +156,7 @@ function LocationCard({ groep, gekoppeld, onChanged }) {
       </div>
 
       {/* Automatisch zoeken, met aanpasbare zoekterm */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
         <input
           type="text"
           value={zoekterm}
@@ -162,7 +167,26 @@ function LocationCard({ groep, gekoppeld, onChanged }) {
         <button onClick={zoekLocatie} disabled={zoekend} style={btn(colors.forest)}>
           {zoekend ? 'Bezig…' : 'Zoeken'}
         </button>
+        <button onClick={() => setKaartOpen((v) => !v)} style={btn(kaartOpen ? colors.inkMuted : colors.campfire)}>
+          {kaartOpen ? 'Kaart verbergen' : 'Kies op kaart'}
+        </button>
       </div>
+
+      {kaartOpen && (
+        <div style={{ marginTop: 10, border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden' }}>
+          <LocationPicker
+            lat={lat ? parseFloat(lat.replace(',', '.')) : null}
+            lng={lng ? parseFloat(lng.replace(',', '.')) : null}
+            onPick={(la, ln) => {
+              setLat(la.toFixed(5));
+              setLng(ln.toFixed(5));
+            }}
+          />
+          <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: '6px 10px' }}>
+            Klik op de kaart om de pin te zetten, of sleep de bestaande pin naar de juiste plek.
+          </p>
+        </div>
+      )}
 
       {resultaten && resultaten.length > 0 && (
         <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
