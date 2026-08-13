@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { EntryFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
+import PublicNav from '../components/PublicNav';
 
 export default function HomePage({ }) {
   const [entries, setEntries] = useState([]);
@@ -28,7 +29,8 @@ export default function HomePage({ }) {
       </Head>
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '56px 20px 100px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <PublicNav />
+        <div style={{ textAlign: 'center', marginBottom: 40, marginTop: 28 }}>
           <div
             style={{
               display: 'inline-block',
