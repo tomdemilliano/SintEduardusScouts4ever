@@ -39,12 +39,18 @@ Het formulier bevat deze velden (in het Nederlands, sommige met drukletters voor
 - GEBOORTEJAAR
 - TOTEMNAAM
 - Ik was lid in deze periode (ongeveer) -> een jaartallenrange zoals "1952-1955"
-- Het plezantste spel of de strafste activiteit tijdens mijn scoutscarrière
+- Het plezantste spel of de strafste activiteit tijdens mijn scoutscarrière -> kan één of meerdere activiteiten bevatten
 - Dit was voor mij de beste kampplaats ooit -> kan één of meerdere kampplaatsen bevatten
 - Het lekkerste kamp-eten was voor mij -> kan één of meerdere gerechten bevatten
 
-Lees het handschrift zo nauwkeurig mogelijk. Als een veld leeg is gelaten, geef dan een lege string (of lege array voor besteKampplaats/lekkersteEten) terug.
+Lees het handschrift zo nauwkeurig mogelijk. Als een veld leeg is gelaten, geef dan een lege string (of lege array voor leuksteActiviteit/besteKampplaats/lekkersteEten) terug.
 Corrigeer voor de hand liggende spellingsfouten niet, transcribeer wat er letterlijk staat, maar corrigeer wel evidente OCR-achtige leesfouten in eigen namen als de context dat logisch maakt.
+
+Voor "leuksteActiviteit": meestal is dit één antwoord (eventueel een korte
+zin, bv. "Toneelspelen" of "De nachttocht in de regen" — dat blijft één
+element). Soms worden meerdere losse spelen/activiteiten opgesomd
+(gescheiden door "en", een komma, of nieuwe regel) — geef die dan als
+aparte elementen in een array terug.
 
 Voor "besteKampplaats": meestal is dit één plaatsnaam (eventueel met een
 gemeente/regio erbij tussen haakjes, bv. "Falmignoul (Walzin)" — dat blijft
@@ -60,7 +66,7 @@ Geef ALLEEN geldige JSON terug, zonder uitleg, zonder markdown-codeblok, in exac
   "geboortejaar": "",
   "totemnaam": "",
   "periode": "",
-  "leuksteActiviteit": "",
+  "leuksteActiviteit": [],
   "besteKampplaats": [],
   "lekkersteEten": []
 }`;
