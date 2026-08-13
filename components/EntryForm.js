@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { colors, fonts, radius } from '../lib/theme';
-import { toDishArray } from '../lib/utils';
+import { toDishArray, fileToBase64 } from '../lib/utils';
 import DishListEditor from './DishListEditor';
 
 const FIELVELDEN = [
@@ -21,15 +21,6 @@ const empty = {
   besteKampplaats: '',
   lekkersteEten: [''],
 };
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result.split(',')[1]);
-    r.onerror = () => reject(new Error('Bestand lezen mislukt'));
-    r.readAsDataURL(file);
-  });
-}
 
 export default function EntryForm({
   initialValues,
