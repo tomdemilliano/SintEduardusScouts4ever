@@ -28,7 +28,7 @@ export default function HomePage({ }) {
         <title>Vriendenboekje — Oud-scouts reünie</title>
       </Head>
 
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '56px 20px 100px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 20px 100px' }}>
         <PublicNav />
         <div style={{ textAlign: 'center', marginBottom: 40, marginTop: 28 }}>
           <div
