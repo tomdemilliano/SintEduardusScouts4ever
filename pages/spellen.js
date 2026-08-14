@@ -17,7 +17,7 @@ export default function SpellenPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>Leukste spelen — Vriendenboekje</title>
