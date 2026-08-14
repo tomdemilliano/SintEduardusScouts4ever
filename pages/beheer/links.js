@@ -1,0 +1,193 @@
+import { useEffect, useState } from 'react';
+import Head from 'next/head';
+import { LinkFactory } from '../../lib/dbSchema';
+import { colors, fonts, fontImports, radius } from '../../lib/theme';
+import RequireAuth from '../../components/RequireAuth';
+
+export default function LinksBeheerPage() {
+  return (
+    <RequireAuth>
+      <LinksBeheerContent />
+    </RequireAuth>
+  );
+}
+
+const leeg = { naam: '', url: '', omschrijving: '' };
+
+function LinksBeheerContent() {
+  const [links, setLinks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [nieuw, setNieuw] = useState(leeg);
+  const [toevoegBezig, setToevoegBezig] = useState(false);
+  const [foutmelding, setFoutmelding] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    setLinks(await LinkFactory.getAll());
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleToevoegen = async () => {
+    setFoutmelding(null);
+    if (!nieuw.naam.trim() || !nieuw.url.trim()) {
+      setFoutmelding('Naam en URL zijn verplicht.');
+      return;
+    }
+    let url = nieuw.url.trim();
+    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+
+    setToevoegBezig(true);
+    try {
+      await LinkFactory.create({ naam: nieuw.naam.trim(), url, omschrijving: nieuw.omschrijving.trim() });
+      setNieuw(leeg);
+      load();
+    } catch (err) {
+      setFoutmelding('Opslaan mislukt, probeer opnieuw.');
+    } finally {
+      setToevoegBezig(false);
+    }
+  };
+
+  const handleVerwijderen = async (link) => {
+    if (!confirm(`Link "${link.naam}" verwijderen?`)) return;
+    await LinkFactory.remove(link.id);
+    load();
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Head>
+        <link rel="stylesheet" href={fontImports} />
+        <title>Links beheren — Beheer</title>
+      </Head>
+
+      <div style={{ maxWidth: 700, margin: '0 auto', padding: '48px 20px 80px' }}>
+        <a href="/beheer" style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, textDecoration: 'none' }}>
+          ← Terug naar overzicht
+        </a>
+        <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: '12px 0 6px' }}>
+          Links beheren
+        </h1>
+        <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 28 }}>
+          Deze links verschijnen publiek op de <code>/links</code>-pagina.
+        </p>
+
+        {/* Nieuwe link toevoegen */}
+        <div
+          style={{
+            background: colors.paperCard,
+            border: `1.5px dashed ${colors.line}`,
+            borderRadius: radius.card,
+            padding: '18px 20px',
+            marginBottom: 28,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.inkMuted }}>
+            Nieuwe link
+          </div>
+          <input
+            type="text"
+            value={nieuw.naam}
+            onChange={(e) => setNieuw((p) => ({ ...p, naam: e.target.value }))}
+            placeholder="Naam (bv. Antwerp Ropes)"
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            value={nieuw.url}
+            onChange={(e) => setNieuw((p) => ({ ...p, url: e.target.value }))}
+            placeholder="URL (bv. www.voorbeeld.be)"
+            style={inputStyle}
+          />
+          <textarea
+            value={nieuw.omschrijving}
+            onChange={(e) => setNieuw((p) => ({ ...p, omschrijving: e.target.value }))}
+            placeholder="Korte omschrijving (optioneel)"
+            rows={2}
+            style={{ ...inputStyle, resize: 'vertical' }}
+          />
+          {foutmelding && (
+            <div style={{ color: colors.stamp, fontFamily: fonts.body, fontSize: 13 }}>{foutmelding}</div>
+          )}
+          <button onClick={handleToevoegen} disabled={toevoegBezig} style={btn(colors.forest)}>
+            {toevoegBezig ? 'Bezig…' : '+ Link toevoegen'}
+          </button>
+        </div>
+
+        {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {links.map((link) => (
+            <div
+              key={link.id}
+              style={{
+                background: colors.paperCard,
+                border: `1px solid ${colors.line}`,
+                borderRadius: radius.card,
+                padding: '14px 18px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 10,
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 600, color: colors.ink }}>
+                  {link.naam}
+                </div>
+                <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forest }}>{link.url}</div>
+                {link.omschrijving && (
+                  <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, marginTop: 2 }}>
+                    {link.omschrijving}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => handleVerwijderen(link)} style={btn(colors.stamp)}>
+                Verwijderen
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {!loading && links.length === 0 && (
+          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Nog geen links toegevoegd.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '10px 12px',
+  borderRadius: radius.input,
+  border: `1px solid ${colors.line}`,
+  background: colors.white,
+  fontFamily: fonts.body,
+  fontSize: 14,
+  color: colors.ink,
+  boxSizing: 'border-box',
+};
+
+function btn(color) {
+  return {
+    alignSelf: 'flex-start',
+    padding: '9px 18px',
+    borderRadius: 999,
+    border: 'none',
+    background: color,
+    color: '#FFF',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  };
+}
