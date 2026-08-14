@@ -42,18 +42,11 @@ function Kampvuurtje() {
 function SiteHeader() {
   return (
     <div style={{ textAlign: 'center', paddingTop: 24 }}>
-      <h1
-        style={{
-          fontFamily: fonts.display,
-          fontSize: 28,
-          fontWeight: 700,
-          color: colors.ink,
-          margin: 0,
-          letterSpacing: '0.01em',
-        }}
-      >
-        Vrienden van Sint Eduardusscouts
-      </h1>
+      <img
+        src="/logo-header.png"
+        alt="Vrienden van Sint-Eduardusscouts — voor oud-scouts en sympathisanten"
+        style={{ display: 'inline-block', width: '100%', maxWidth: 420, height: 'auto' }}
+      />
     </div>
   );
 }
