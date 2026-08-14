@@ -34,7 +34,7 @@ export default function EtenPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>Lekkerste kamp-eten — Vriendenboekje</title>
