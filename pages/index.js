@@ -1,196 +1,44 @@
-import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory } from '../lib/dbSchema';
-import { colors, fonts, fontImports, radius } from '../lib/theme';
-import PublicNav from '../components/PublicNav';
+import { colors, fonts, fontImports } from '../lib/theme';
+import { NavButtons } from '../components/PublicNav';
 
-export default function HomePage({ }) {
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [zoek, setZoek] = useState('');
-
-  useEffect(() => {
-    EntryFactory.getPublished().then((e) => {
-      setEntries(e);
-      setLoading(false);
-    });
-  }, []);
-
-  const gefilterd = entries.filter((e) =>
-    `${e.naam} ${e.totemnaam}`.toLowerCase().includes(zoek.toLowerCase())
-  );
-
+export default function LandingPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
-        <title>Vriendenboekje — Oud-scouts reünie</title>
+        <title>Vrienden van Sint-Eduardusscouts</title>
       </Head>
 
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 20px 100px' }}>
-        <PublicNav />
-        <div style={{ textAlign: 'center', marginBottom: 40, marginTop: 28 }}>
-          <div
-            style={{
-              display: 'inline-block',
-              fontFamily: fonts.body,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: colors.campfire,
-              marginBottom: 10,
-            }}
-          >
-            Reünie oud-scouts
-          </div>
-          <h1
-            style={{
-              fontFamily: fonts.display,
-              fontSize: 48,
-              fontWeight: 700,
-              color: colors.ink,
-              margin: '0 0 10px',
-            }}
-          >
-            Het Vriendenboekje
-          </h1>
-          <p style={{ fontFamily: fonts.body, fontSize: 16, color: colors.inkMuted, maxWidth: 480, margin: '0 auto' }}>
-            Herinneringen, totemnamen en de beste kampverhalen van iedereen die meedeed.
-          </p>
-        </div>
-
-        <input
-          type="text"
-          value={zoek}
-          onChange={(e) => setZoek(e.target.value)}
-          placeholder="Zoek op naam of totemnaam…"
-          style={{
-            display: 'block',
-            width: '100%',
-            maxWidth: 360,
-            margin: '0 auto 36px',
-            padding: '10px 14px',
-            borderRadius: radius.badge,
-            border: `1px solid ${colors.line}`,
-            background: colors.white,
-            fontFamily: fonts.body,
-            fontSize: 14,
-            color: colors.ink,
-            boxSizing: 'border-box',
-          }}
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '64px 20px 100px', textAlign: 'center' }}>
+        <img
+          src="/logo-header.png"
+          alt="Vrienden van Sint-Eduardusscouts — voor oud-scouts en sympathisanten"
+          style={{ display: 'inline-block', width: '100%', maxWidth: 520, height: 'auto' }}
         />
 
-        {loading && (
-          <p style={{ textAlign: 'center', fontFamily: fonts.body, color: colors.inkMuted }}>
-            Bezig met laden…
-          </p>
-        )}
-
-        <div
+        <p
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: 18,
+            fontFamily: fonts.body,
+            fontSize: 16,
+            color: colors.ink,
+            lineHeight: 1.6,
+            maxWidth: 520,
+            margin: '32px auto 0',
           }}
         >
-          <Link href="/toevoegen" style={{ textDecoration: 'none' }}>
-            <div
-              style={{
-                background: colors.campfireLight,
-                border: `1.5px dashed ${colors.campfire}`,
-                borderRadius: radius.card,
-                padding: '22px 20px',
-                height: '100%',
-                boxSizing: 'border-box',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-              }}
-            >
-              <div style={{ fontSize: 22, marginBottom: 8 }}>✍️</div>
-              <div style={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 700, color: colors.campfire, lineHeight: 1.3 }}>
-                Was jij lid maar sta hier nog niet tussen?
-              </div>
-              <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.ink, marginTop: 6, lineHeight: 1.4 }}>
-                Klik dan hier om jouw ervaringen toe te voegen.
-              </div>
-            </div>
+          Deze website is er voor oud-leden van Sint-Eduardusscouts. We maakten
+          een overzicht van alle leden, het lekkerste kampeten, de tofste
+          spelletjes en de beste kamplocaties door de jaren heen. Sta jij er
+          nog niet tussen?{' '}
+          <Link href="/toevoegen" style={{ color: colors.forest, fontWeight: 600 }}>
+            Voeg dan gerust ook jouw eigen herinneringen toe
           </Link>
+          .
+        </p>
 
-          {gefilterd.map((entry) => (
-            <Link
-              key={entry.id}
-              href={`/entry/${entry.id}`}
-              style={{ textDecoration: 'none' }}
-            >
-              <div
-                style={{
-                  position: 'relative',
-                  background: colors.paperCard,
-                  border: `1px solid ${colors.line}`,
-                  borderRadius: radius.card,
-                  padding: '22px 20px',
-                  height: '100%',
-                  boxSizing: 'border-box',
-                  transition: 'transform 0.15s ease',
-                }}
-              >
-                {entry.geboortejaar && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 14,
-                      right: 14,
-                      fontFamily: fonts.body,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: colors.inkMuted,
-                      border: `1px solid ${colors.line}`,
-                      borderRadius: radius.badge,
-                      padding: '3px 8px',
-                    }}
-                  >
-                    °{entry.geboortejaar}
-                  </div>
-                )}
-                <div style={{ fontFamily: fonts.display, fontSize: 21, fontWeight: 600, color: colors.ink, marginBottom: 6, paddingRight: 40 }}>
-                  {entry.naam}
-                </div>
-                {entry.totemnaam && (
-                  <div
-                    style={{
-                      display: 'inline-block',
-                      fontFamily: fonts.body,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: colors.stamp,
-                      border: `1.5px solid ${colors.stamp}`,
-                      borderRadius: radius.badge,
-                      padding: '3px 10px',
-                      marginBottom: 10,
-                      transform: 'rotate(-2deg)',
-                    }}
-                  >
-                    {entry.totemnaam}
-                  </div>
-                )}
-                <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>
-                  {entry.periode}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {!loading && gefilterd.length === 0 && (
-          <p style={{ textAlign: 'center', fontFamily: fonts.body, color: colors.inkMuted }}>
-            Geen resultaten gevonden.
-          </p>
-        )}
+        <NavButtons style={{ marginTop: 36, paddingTop: 0 }} />
       </div>
     </div>
   );
