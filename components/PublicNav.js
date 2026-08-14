@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { colors, fonts } from '../lib/theme';
 
 const LINKS = [
-  { href: '/', label: 'Vriendenboekje', icon: '📖' },
+  { href: '/vriendenboekje', label: 'Vriendenboekje', icon: '📖' },
   { href: '/tijdlijn', label: 'Tijdlijn', icon: '⏳' },
   { href: '/kampplaatsen', label: 'Kampplaatsen', icon: '🏕️' },
   { href: '/eten', label: 'Eten', icon: '🍲' },
@@ -51,66 +51,78 @@ function SiteHeader() {
   );
 }
 
-export default function PublicNav() {
+/**
+ * De losse rij navigatieknoppen, herbruikbaar los van de header — bv. op de
+ * landingspagina, die de header/logo al op zijn eigen, grotere manier toont.
+ */
+export function NavButtons({ style }) {
   const router = useRouter();
 
   return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        padding: '18px 20px 0',
+        ...style,
+      }}
+    >
+      <Link href="/" aria-label="Naar de homepagina" style={{ display: 'flex', marginRight: 4 }}>
+        <Kampvuurtje />
+      </Link>
+
+      {LINKS.map((link, i) => {
+        const active = router.pathname === link.href;
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="vb-nav-link"
+            style={{
+              padding: '7px 16px',
+              borderRadius: RADIUS[i % RADIUS.length],
+              fontFamily: fonts.body,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: 'none',
+              color: active ? colors.white : colors.ink,
+              background: active ? colors.forest : colors.paperCard,
+              border: `1.5px solid ${active ? colors.forest : colors.line}`,
+              transform: `rotate(${ROTATIE[i % ROTATIE.length]}deg)`,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span aria-hidden="true">{link.icon}</span>
+            {link.label}
+          </Link>
+        );
+      })}
+
+      <style jsx>{`
+        .vb-nav-link {
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .vb-nav-link:hover {
+          transform: rotate(0deg) scale(1.05) !important;
+          box-shadow: 0 3px 8px rgba(44, 36, 25, 0.12);
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/** Header (logo) + navigatieknoppen samen — gebruikt op alle pagina's behalve de landingspagina. */
+export default function PublicNav() {
+  return (
     <div>
       <SiteHeader />
-      <div
-        style={{
-          display: 'flex',
-          gap: 10,
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          padding: '18px 20px 0',
-        }}
-      >
-        <Link href="/" aria-label="Naar het vriendenboekje" style={{ display: 'flex', marginRight: 4 }}>
-          <Kampvuurtje />
-        </Link>
-
-        {LINKS.map((link, i) => {
-          const active = router.pathname === link.href;
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="vb-nav-link"
-              style={{
-                padding: '7px 16px',
-                borderRadius: RADIUS[i % RADIUS.length],
-                fontFamily: fonts.body,
-                fontSize: 13,
-                fontWeight: 600,
-                textDecoration: 'none',
-                color: active ? colors.white : colors.ink,
-                background: active ? colors.forest : colors.paperCard,
-                border: `1.5px solid ${active ? colors.forest : colors.line}`,
-                transform: `rotate(${ROTATIE[i % ROTATIE.length]}deg)`,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <span aria-hidden="true">{link.icon}</span>
-              {link.label}
-            </Link>
-          );
-        })}
-
-        <style jsx>{`
-          .vb-nav-link {
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-          }
-          .vb-nav-link:hover {
-            transform: rotate(0deg) scale(1.05) !important;
-            box-shadow: 0 3px 8px rgba(44, 36, 25, 0.12);
-          }
-        `}</style>
-      </div>
+      <NavButtons />
     </div>
   );
 }
