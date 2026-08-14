@@ -25,7 +25,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>Inloggen — Vriendenboekje beheer</title>
