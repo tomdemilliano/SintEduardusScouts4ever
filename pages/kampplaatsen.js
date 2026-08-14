@@ -39,7 +39,7 @@ export default function KampplaatsenPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>Kampplaatsen — Vriendenboekje</title>
