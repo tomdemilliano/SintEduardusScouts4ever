@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/kampplaatsen', label: 'Kampplaatsen', icon: '🏕️' },
   { href: '/eten', label: 'Eten', icon: '🍲' },
   { href: '/spellen', label: 'Spellen', icon: '🎲' },
+  { href: '/links', label: 'Links', icon: '🔗' },
 ];
 
 // Lichtjes scheve hoeken en rotaties, per knop verschillend maar altijd
