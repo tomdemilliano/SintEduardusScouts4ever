@@ -23,7 +23,7 @@ export default function EntryDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: colors.paper, padding: 48 }}>
+      <div style={{ minHeight: '100vh', background: 'transparent', padding: 48 }}>
         <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>
       </div>
     );
@@ -31,7 +31,7 @@ export default function EntryDetailPage() {
 
   if (!entry) {
     return (
-      <div style={{ minHeight: '100vh', background: colors.paper, padding: 48, textAlign: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'transparent', padding: 48, textAlign: 'center' }}>
         <p style={{ fontFamily: fonts.body, color: colors.stamp, marginBottom: 12 }}>
           Dit formulier bestaat niet (meer) of is nog niet gepubliceerd.
         </p>
@@ -43,7 +43,7 @@ export default function EntryDetailPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>{entry.naam} — Vriendenboekje</title>
