@@ -13,7 +13,7 @@ export default function LandingPage() {
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '64px 20px 100px', textAlign: 'center' }}>
         <img
-          src="/logo-header.png"
+          src="/logo-index.png"
           alt="Vrienden van Sint-Eduardusscouts — voor oud-scouts en sympathisanten"
           style={{ display: 'inline-block', width: '100%', maxWidth: 520, height: 'auto' }}
         />
