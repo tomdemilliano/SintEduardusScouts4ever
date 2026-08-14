@@ -46,7 +46,7 @@ function EditEntryContent() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: colors.paper, padding: 48 }}>
+      <div style={{ minHeight: '100vh', background: 'transparent', padding: 48 }}>
         <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>
       </div>
     );
@@ -54,14 +54,14 @@ function EditEntryContent() {
 
   if (!entry) {
     return (
-      <div style={{ minHeight: '100vh', background: colors.paper, padding: 48 }}>
+      <div style={{ minHeight: '100vh', background: 'transparent', padding: 48 }}>
         <p style={{ fontFamily: fonts.body, color: colors.stamp }}>Formulier niet gevonden.</p>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>{entry.naam} bewerken — Vriendenboekje</title>
