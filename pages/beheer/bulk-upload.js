@@ -105,7 +105,7 @@ function BulkUploadContent() {
   const alleGedaan = items.length > 0 && items.every((it) => it.status === 'klaar' || it.status === 'fout');
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>Meerdere scans uploaden — Beheer</title>
