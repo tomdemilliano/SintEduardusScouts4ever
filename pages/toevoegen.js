@@ -75,7 +75,7 @@ export default function ToevoegenPage() {
 
   if (verzonden) {
     return (
-      <div style={{ minHeight: '100vh', background: colors.paper }}>
+      <div style={{ minHeight: '100vh', background: 'transparent' }}>
         <Head>
           <link rel="stylesheet" href={fontImports} />
           <title>Bedankt! — Vriendenboekje</title>
@@ -125,7 +125,7 @@ export default function ToevoegenPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>Zelf toevoegen — Vriendenboekje</title>
