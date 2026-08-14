@@ -35,7 +35,7 @@ export default function EntryDetailPage() {
         <p style={{ fontFamily: fonts.body, color: colors.stamp, marginBottom: 12 }}>
           Dit formulier bestaat niet (meer) of is nog niet gepubliceerd.
         </p>
-        <Link href="/" style={{ fontFamily: fonts.body, color: colors.forest }}>
+        <Link href="/vriendenboekje" style={{ fontFamily: fonts.body, color: colors.forest }}>
           ← Terug naar het vriendenboekje
         </Link>
       </div>
@@ -50,7 +50,7 @@ export default function EntryDetailPage() {
       </Head>
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 20px 100px' }}>
-        <Link href="/" style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, textDecoration: 'none' }}>
+        <Link href="/vriendenboekje" style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, textDecoration: 'none' }}>
           ← Terug naar het vriendenboekje
         </Link>
 
