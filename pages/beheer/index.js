@@ -105,6 +105,9 @@ function BeheerContent() {
             <Link href="/beheer/gerechten" style={secondaryLink}>
               🍽️ Gerechten
             </Link>
+            <Link href="/beheer/links" style={secondaryLink}>
+              🔗 Links
+            </Link>
             <Link href="/beheer/upload" style={secondaryLink}>
               + Eén scan
             </Link>
