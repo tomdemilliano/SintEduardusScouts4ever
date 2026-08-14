@@ -41,7 +41,7 @@ function LocatiesContent() {
   const aantalNietGekoppeld = groepen.filter((g) => !isGekoppeld(g)).length;
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.paper }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
         <title>Kampplaatsen koppelen — Beheer</title>
