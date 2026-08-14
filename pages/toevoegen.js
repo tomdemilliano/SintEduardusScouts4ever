@@ -102,7 +102,7 @@ export default function ToevoegenPage() {
               soms wel eventjes duren, dus even geduld.
             </p>
             <Link
-              href="/"
+              href="/vriendenboekje"
               style={{
                 display: 'inline-block',
                 marginTop: 20,
