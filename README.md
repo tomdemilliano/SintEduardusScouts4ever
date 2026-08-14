@@ -158,7 +158,8 @@ lib/dbSchema.js         Factory-pattern: alle Firestore/Storage-toegang
 lib/theme.js            Design tokens (kleuren, fonts)
 components/EntryForm.js Herbruikbaar upload+bewerk-formulier
 components/RequireAuth.js Schermt /beheer-pagina's af
-pages/index.js           Publieke galerij
+pages/index.js           Landingspagina (logo, intro, navigatieknoppen)
+pages/vriendenboekje.js  Publieke galerij (voorheen op /)
 pages/entry/[id].js       Publieke detailpagina per persoon
 pages/beheer/login.js     Inlogpagina
 pages/beheer/index.js     Overzicht: concepten + gepubliceerd
