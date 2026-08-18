@@ -21,6 +21,7 @@ function KentekensContent() {
   const [nieuwBestand, setNieuwBestand] = useState(null);
   const [toevoegBezig, setToevoegBezig] = useState(false);
   const [foutmelding, setFoutmelding] = useState(null);
+  const [bewerkJaar, setBewerkJaar] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -55,6 +56,12 @@ function KentekensContent() {
   const handleVerwijderen = async (k) => {
     if (!confirm(`Kenteken ${werkingsjaarLabel(k.startJaar)} verwijderen?`)) return;
     await KentekenFactory.remove(k.startJaar, k.afbeeldingPath);
+    load();
+  };
+
+  const handleOpslaanBewerking = async (k, jaarleuze, file) => {
+    await KentekenFactory.set(k.startJaar, { jaarleuze, file, bestaandePath: k.afbeeldingPath });
+    setBewerkJaar(null);
     load();
   };
 
@@ -140,54 +147,141 @@ function KentekensContent() {
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {kentekens.map((k) => (
-            <div
-              key={k.id}
-              style={{
-                background: colors.paperCard,
-                border: `1px solid ${colors.line}`,
-                borderRadius: radius.card,
-                padding: '12px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-              }}
-            >
-              {k.afbeeldingUrl ? (
-                <img
-                  src={k.afbeeldingUrl}
-                  alt={werkingsjaarLabel(k.startJaar)}
-                  style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${colors.line}`, flexShrink: 0 }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: colors.campfireLight,
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 600, color: colors.ink }}>
-                  {werkingsjaarLabel(k.startJaar)}
+          {kentekens.map((k) =>
+            bewerkJaar === k.startJaar ? (
+              <KentekenBewerkForm
+                key={k.id}
+                kenteken={k}
+                onOpslaan={(jaarleuze, file) => handleOpslaanBewerking(k, jaarleuze, file)}
+                onAnnuleren={() => setBewerkJaar(null)}
+              />
+            ) : (
+              <div
+                key={k.id}
+                style={{
+                  background: colors.paperCard,
+                  border: `1px solid ${colors.line}`,
+                  borderRadius: radius.card,
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                }}
+              >
+                {k.afbeeldingUrl ? (
+                  <img
+                    src={k.afbeeldingUrl}
+                    alt={werkingsjaarLabel(k.startJaar)}
+                    style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${colors.line}`, flexShrink: 0 }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '50%',
+                      background: colors.campfireLight,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 600, color: colors.ink }}>
+                    {werkingsjaarLabel(k.startJaar)}
+                  </div>
+                  <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>
+                    {k.jaarleuze || <em>geen jaarleuze</em>}
+                  </div>
                 </div>
-                <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>
-                  {k.jaarleuze || <em>geen jaarleuze</em>}
-                </div>
+                <button onClick={() => setBewerkJaar(k.startJaar)} style={btn(colors.inkMuted)}>
+                  Bewerken
+                </button>
+                <button onClick={() => handleVerwijderen(k)} style={btn(colors.stamp)}>
+                  Verwijderen
+                </button>
               </div>
-              <button onClick={() => handleVerwijderen(k)} style={btn(colors.stamp)}>
-                Verwijderen
-              </button>
-            </div>
-          ))}
+            )
+          )}
         </div>
 
         {!loading && kentekens.length === 0 && (
           <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Nog geen kentekens toegevoegd.</p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function KentekenBewerkForm({ kenteken, onOpslaan, onAnnuleren }) {
+  const [jaarleuze, setJaarleuze] = useState(kenteken.jaarleuze || '');
+  const [bestand, setBestand] = useState(null);
+  const [bezig, setBezig] = useState(false);
+  const [fout, setFout] = useState(null);
+
+  const opslaan = async () => {
+    setBezig(true);
+    setFout(null);
+    try {
+      await onOpslaan(jaarleuze.trim(), bestand);
+    } catch (err) {
+      setFout('Opslaan mislukt, probeer opnieuw.');
+    } finally {
+      setBezig(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        background: colors.paperCard,
+        border: `1.5px solid ${colors.forest}`,
+        borderRadius: radius.card,
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {kenteken.afbeeldingUrl && (
+          <img
+            src={kenteken.afbeeldingUrl}
+            alt=""
+            style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${colors.line}` }}
+          />
+        )}
+        <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 600, color: colors.ink }}>
+          {werkingsjaarLabel(kenteken.startJaar)}
+          <span style={{ fontFamily: fonts.body, fontSize: 11, fontWeight: 400, color: colors.inkMuted, marginLeft: 8 }}>
+            (werkingsjaar kan niet gewijzigd worden — verwijder en voeg opnieuw toe indien nodig)
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Jaarleuze</label>
+        <input type="text" value={jaarleuze} onChange={(e) => setJaarleuze(e.target.value)} style={inputStyle} />
+      </div>
+
+      <label style={{ ...labelStyle, cursor: 'pointer' }}>
+        Nieuwe afbeelding (optioneel — laat leeg om de bestaande te behouden)
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setBestand(e.target.files?.[0] || null)}
+          style={{ display: 'block', marginTop: 6, fontFamily: fonts.body, fontSize: 13 }}
+        />
+      </label>
+
+      {fout && <div style={{ color: colors.stamp, fontFamily: fonts.body, fontSize: 13 }}>{fout}</div>}
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={opslaan} disabled={bezig} style={btn(colors.forest)}>
+          {bezig ? 'Bezig…' : 'Wijzigingen opslaan'}
+        </button>
+        <button onClick={onAnnuleren} style={btn(colors.inkMuted)}>
+          Annuleren
+        </button>
       </div>
     </div>
   );
