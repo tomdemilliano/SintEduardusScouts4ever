@@ -90,25 +90,7 @@ npm run dev
   Environment Variables).
 - Vercel bouwt en deployt automatisch bij elke push.
 
-## Meerdere scans in één keer
-
-`/beheer/bulk-upload` — kies al je scans tegelijk (bv. de 75 ingescande
-pagina's), elke scan wordt automatisch herkend en als concept opgeslagen
-(3 tegelijk verwerkt om het niet te lang te laten duren). Nakijken en
-publiceren doe je nadien per formulier, zoals gewoonlijk via `/beheer`.
-
-## Filters in het beheeroverzicht
-
-Op `/beheer` kan je filteren op:
-- **Status** — alle / enkel concepten / enkel gepubliceerd
-- **Kampplaats** — alle / enkel entries waarvan de kampplaats nog niet
-  gekoppeld is aan de kaart (handig om systematisch `/beheer/locaties`
-  te doorlopen)
-
-Elke rij toont ook meteen of de kampplaats gekoppeld is (📍 gekoppeld,
-⚠ niet gekoppeld, of geen kampplaats ingevuld).
-
-
+## Nieuwe publieke pagina's
 
 - **`/tijdlijn`** — iedereen chronologisch gegroepeerd op het eerste
   jaartal uit hun opgegeven periode (bv. "1952 - 1955" → 1952).
@@ -126,23 +108,6 @@ op via de ingebouwde zoekfunctie (gebruikt OpenStreetMap/Nominatim, geen
 API-key nodig) en kies het juiste resultaat. Plaatsen die je niet koppelt
 verschijnen gewoon niet op de kaart, maar wel in de tekstlijst.
 
-## Zelf toevoegen (publiek formulier)
-
-`/toevoegen` — voor mensen die geen papieren formulier invulden op de
-reünie maar toch in het vriendenboekje willen. Dezelfde vragen als op het
-scanformulier, zonder scan-upload uiteraard.
-
-Bot-wering: een verborgen honeypot-veld (bots vullen dit vaak automatisch
-in, mensen zien het niet) plus een simpele rekensom. Dit is bewust
-lichtgewicht — geen externe dienst zoals reCAPTCHA nodig — omdat de
-echte garantie de handmatige goedkeuring is: elke inzending komt als
-**concept** binnen op `/beheer`, exact zoals een geüploade scan, en wordt
-pas publiek zichtbaar nadat jij ze publiceert.
-
-`firestore.rules` staat een niet-ingelogde bezoeker toe om een nieuwe
-entry aan te maken, maar enkel als concept, zonder scan, en met beperkte
-veldgroottes — lezen, bewerken of verwijderen kan een bezoeker niet.
-
 ## Nieuwe Firestore-collectie
 
 Naast `entries` is er nu ook een `locations`-collectie
@@ -158,8 +123,7 @@ lib/dbSchema.js         Factory-pattern: alle Firestore/Storage-toegang
 lib/theme.js            Design tokens (kleuren, fonts)
 components/EntryForm.js Herbruikbaar upload+bewerk-formulier
 components/RequireAuth.js Schermt /beheer-pagina's af
-pages/index.js           Landingspagina (logo, intro, navigatieknoppen)
-pages/vriendenboekje.js  Publieke galerij (voorheen op /)
+pages/index.js           Publieke galerij
 pages/entry/[id].js       Publieke detailpagina per persoon
 pages/beheer/login.js     Inlogpagina
 pages/beheer/index.js     Overzicht: concepten + gepubliceerd
@@ -168,7 +132,31 @@ pages/beheer/[id].js      Bestaande entry bewerken
 pages/api/extract.js      Server-route die Claude aanroept voor herkenning
 ```
 
-## Notities
+## Uitgebreide tijdlijn (kentekens, mijlpalen, jaren-slider)
+
+De tijdlijn (`/tijdlijn`) toont nu, naast de leden, ook:
+- **Jaarkentekens**: één afbeelding + jaarleuze per werkingsjaar (start
+  september), beheerd via `/beheer/kentekens`.
+- **Mijlpalen**: belangrijke momenten uit de geschiedenis van de groep,
+  beheerd via `/beheer/mijlpalen`. Bezoekers kunnen zelf een mijlpaal
+  voorstellen via `/mijlpaal-toevoegen` (zonder in te loggen, met
+  e-mailadres + een rekensom + honeypot tegen bots). Een voorstel komt
+  binnen met status `pending` en verschijnt pas publiek nadat de
+  beheerder het goedkeurt op `/beheer/mijlpalen`.
+- **Custom jaren-slider**: de tijdlijn is nu vast en breed (1944 tot nu,
+  22px per jaar), met een eigen gestileerde schuifbalk bovenaan in plaats
+  van de browser-scrollbar. Slepen aan de schuifbalk en horizontaal
+  scrollen/swipen in de tijdlijn zelf blijven allebei gesynchroniseerd
+  werken.
+
+Nieuwe Firestore-collecties: `badges` (kentekens, publiek leesbaar) en
+`milestones` (mijlpalen, enkel gepubliceerde zijn publiek leesbaar — zie
+`firestore.rules`). Afbeeldingen komen terecht onder
+`vriendenboekje/kentekens/...` en `vriendenboekje/mijlpalen/...` in de
+gedeelde Storage-bucket; de storage-regel voor `vriendenboekje/` is
+verbreed naar alle submappen (`{allPaths=**}`) zodat dit meteen werkt.
+
+
 
 - PDF's worden rechtstreeks naar Claude gestuurd (geen aparte
   PDF-naar-afbeelding conversie nodig); voor foto's (jpg/png) werkt het
