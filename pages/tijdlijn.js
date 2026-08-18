@@ -1,77 +1,92 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory } from '../lib/dbSchema';
+import { EntryFactory, KentekenFactory, MijlpaalFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
-import { parsePeriodRange } from '../lib/utils';
+import { parsePeriodRange, werkingsjaarLabel } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
 
 const NAAM_KOLOM = 130;
-const JAAR_KOLOM = 96;
+const PX_PER_JAAR = 22;
+const STARTJAAR = 1944;
 
 export default function TijdlijnPage() {
   const [rijen, setRijen] = useState([]);
   const [zonderJaar, setZonderJaar] = useState([]);
-  const [bereik, setBereik] = useState(null); // { min, max }
+  const [kentekens, setKentekens] = useState([]);
+  const [mijlpalen, setMijlpalen] = useState([]);
+  const [geselecteerdeMijlpaal, setGeselecteerdeMijlpaal] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const eindJaar = new Date().getFullYear();
+  const totaalJaren = eindJaar - STARTJAAR + 1;
+  const breedteJaren = totaalJaren * PX_PER_JAAR;
+  const totaleBreedte = NAAM_KOLOM + breedteJaren;
+
+  const scrollRef = useRef(null);
+  const [sliderPercent, setSliderPercent] = useState(0);
+
   useEffect(() => {
-    EntryFactory.getPublished().then((entries) => {
-      const metJaar = [];
-      const geen = [];
-      entries.forEach((e) => {
-        const { start, end } = parsePeriodRange(e.periode);
-        if (start) metJaar.push({ ...e, start, end });
-        else geen.push(e);
-      });
-
-      if (metJaar.length > 0) {
-        const alleJaren = metJaar.flatMap((e) => [e.start, e.end || e.start]);
-        const min = Math.min(...alleJaren);
-        const max = Math.max(...alleJaren);
-        const gesorteerd = [...metJaar].sort(
-          (a, b) => a.start - b.start || a.naam.localeCompare(b.naam)
-        );
-        setRijen(gesorteerd);
-        setBereik({ min, max: Math.max(max, min + 1) }); // vermijd deling door 0
+    Promise.all([EntryFactory.getPublished(), KentekenFactory.getAll(), MijlpaalFactory.getPublished()]).then(
+      ([entries, kentekenLijst, mijlpaalLijst]) => {
+        const metJaar = [];
+        const geen = [];
+        entries.forEach((e) => {
+          const { start, end } = parsePeriodRange(e.periode);
+          if (start) metJaar.push({ ...e, start, end });
+          else geen.push(e);
+        });
+        setRijen([...metJaar].sort((a, b) => a.start - b.start || a.naam.localeCompare(b.naam)));
+        setZonderJaar(geen);
+        setKentekens(kentekenLijst.filter((k) => k.afbeeldingUrl || k.jaarleuze));
+        setMijlpalen(mijlpaalLijst);
+        setLoading(false);
       }
-
-      setZonderJaar(geen);
-      setLoading(false);
-    });
+    );
   }, []);
 
-  const percent = (jaar) => {
-    if (!bereik) return 0;
-    return ((jaar - bereik.min) / (bereik.max - bereik.min)) * 100;
-  };
+  const pixelFor = (jaar) => NAAM_KOLOM + (jaar - STARTJAAR) * PX_PER_JAAR;
 
   const tickJaren = () => {
-    if (!bereik) return [];
-    const span = bereik.max - bereik.min;
-    const stap = span <= 12 ? 2 : span <= 30 ? 5 : 10;
     const ticks = [];
-    for (let j = bereik.min; j <= bereik.max; j += stap) ticks.push(j);
-    if (ticks[ticks.length - 1] !== bereik.max) ticks.push(bereik.max);
+    for (let j = STARTJAAR; j <= eindJaar; j += 5) ticks.push(j);
+    if (ticks[ticks.length - 1] !== eindJaar) ticks.push(eindJaar);
     return ticks;
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setSliderPercent(max > 0 ? (el.scrollLeft / max) * 100 : 0);
+  };
+
+  const handleSliderChange = (e) => {
+    const percent = Number(e.target.value);
+    setSliderPercent(percent);
+    const el = scrollRef.current;
+    if (el) {
+      const max = el.scrollWidth - el.clientWidth;
+      el.scrollLeft = (percent / 100) * max;
+    }
   };
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
-        <title>Tijdlijn — Vriendenboekje</title>
+        <title>Tijdlijn — Vrienden van Sint-Eduardusscouts</title>
       </Head>
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 100px' }}>
         <PublicNav />
 
-        <div style={{ textAlign: 'center', margin: '28px 0 36px' }}>
+        <div style={{ textAlign: 'center', margin: '28px 0 28px' }}>
           <h1 style={{ fontFamily: fonts.display, fontSize: 38, fontWeight: 700, color: colors.ink, margin: '0 0 8px' }}>
             Doorheen de jaren
           </h1>
           <p style={{ fontFamily: fonts.body, fontSize: 15, color: colors.inkMuted }}>
-            Ieders ledenperiode, van start- tot eindjaar
+            Leden, jaarkentekens en mijlpalen sinds {STARTJAAR}
           </p>
         </div>
 
@@ -79,149 +94,289 @@ export default function TijdlijnPage() {
           <p style={{ textAlign: 'center', fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>
         )}
 
-        {!loading && bereik && (
-          <div
-            style={{
-              background: colors.paperCard,
-              border: `1px solid ${colors.line}`,
-              borderRadius: radius.card,
-              padding: '20px 20px 8px',
-            }}
-          >
-            {/* Jaartallen-as */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ width: NAAM_KOLOM, flexShrink: 0 }} />
-              <div style={{ flex: 1, position: 'relative', height: 16 }}>
-                {tickJaren().map((jaar) => (
-                  <div
-                    key={jaar}
-                    style={{
-                      position: 'absolute',
-                      left: `${percent(jaar)}%`,
-                      transform: 'translateX(-50%)',
-                      fontFamily: fonts.body,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: colors.inkMuted,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {jaar}
-                  </div>
-                ))}
+        {!loading && (
+          <>
+            {/* Custom jaren-slider */}
+            <div style={{ padding: '0 4px', marginBottom: 12 }}>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.1"
+                value={sliderPercent}
+                onChange={handleSliderChange}
+                className="vb-jaarslider"
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, marginTop: 2 }}>
+                <span>{STARTJAAR}</span>
+                <span>← sleep om door de jaren te bladeren →</span>
+                <span>{eindJaar}</span>
               </div>
-              <div style={{ width: JAAR_KOLOM, flexShrink: 0 }} />
             </div>
 
-            {/* Rijen */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {rijen.map((entry) => {
-                const linksPercent = percent(entry.start);
-                const heeftEind = entry.end != null;
-                const breedtePercent = heeftEind
-                  ? Math.max(percent(entry.end) - linksPercent, 3)
-                  : null;
-
-                return (
-                  <Link
-                    key={entry.id}
-                    href={`/entry/${entry.id}`}
-                    style={{ textDecoration: 'none', display: 'block' }}
-                  >
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              style={{
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                background: colors.paperCard,
+                border: `1px solid ${colors.line}`,
+                borderRadius: radius.card,
+                padding: '16px 0',
+              }}
+            >
+              <div style={{ width: totaleBreedte }}>
+                {/* Jaartallen-as */}
+                <div style={{ position: 'relative', height: 20, marginBottom: 10 }}>
+                  {tickJaren().map((jaar) => (
                     <div
+                      key={jaar}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '4px 0',
-                        borderRadius: radius.input,
+                        position: 'absolute',
+                        left: pixelFor(jaar),
+                        transform: 'translateX(-50%)',
+                        fontFamily: fonts.body,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: colors.inkMuted,
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      <div
-                        style={{
-                          width: NAAM_KOLOM,
-                          flexShrink: 0,
-                          fontFamily: fonts.display,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: colors.ink,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          paddingRight: 8,
-                        }}
-                        title={entry.naam}
-                      >
-                        {entry.naam}
-                      </div>
+                      {jaar}
+                    </div>
+                  ))}
+                </div>
 
-                      <div style={{ flex: 1, position: 'relative', height: 24 }}>
-                        {/* subtiele achtergrondlijn voor het volledige jaarbereik */}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            top: '50%',
-                            height: 1,
-                            background: colors.line,
-                          }}
-                        />
-                        {heeftEind ? (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              left: `${linksPercent}%`,
-                              width: `${breedtePercent}%`,
-                              top: 3,
-                              height: 18,
-                              background: colors.forest,
-                              borderRadius: radius.input,
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              left: `${linksPercent}%`,
-                              top: 2,
-                              height: 20,
-                              minWidth: 40,
-                              padding: '0 6px',
-                              background: colors.campfireLight,
-                              border: `1.5px dashed ${colors.campfire}`,
-                              borderRadius: radius.input,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <span style={{ fontFamily: fonts.body, fontSize: 11, fontWeight: 700, color: colors.campfire, whiteSpace: 'nowrap' }}>
-                              ⋯?
-                            </span>
-                          </div>
+                {/* Jaarkentekens */}
+                {kentekens.length > 0 && (
+                  <div style={{ position: 'relative', height: 56, marginBottom: 8 }}>
+                    <RijLabel>🎖️ Kentekens</RijLabel>
+                    {kentekens.map((k) => (
+                      <div
+                        key={k.id}
+                        title={`${werkingsjaarLabel(k.startJaar)}${k.jaarleuze ? ': ' + k.jaarleuze : ''}`}
+                        style={{
+                          position: 'absolute',
+                          left: pixelFor(k.startJaar),
+                          top: 4,
+                          width: 34,
+                          height: 34,
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          border: `2px solid ${colors.campfire}`,
+                          background: colors.white,
+                          cursor: 'default',
+                        }}
+                      >
+                        {k.afbeeldingUrl && (
+                          <img src={k.afbeeldingUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         )}
                       </div>
+                    ))}
+                  </div>
+                )}
 
-                      <div
+                {/* Mijlpalen */}
+                {mijlpalen.length > 0 && (
+                  <div style={{ position: 'relative', height: 34, marginBottom: 8 }}>
+                    <RijLabel>🚩 Mijlpalen</RijLabel>
+                    {mijlpalen.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => setGeselecteerdeMijlpaal(m)}
+                        title={m.titel}
                         style={{
-                          width: JAAR_KOLOM,
-                          flexShrink: 0,
-                          fontFamily: fonts.body,
-                          fontSize: 12,
-                          color: colors.inkMuted,
-                          textAlign: 'right',
+                          position: 'absolute',
+                          left: pixelFor(m.jaar),
+                          top: 0,
+                          transform: 'translateX(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          fontSize: 20,
+                          cursor: 'pointer',
+                          lineHeight: 1,
+                          padding: 2,
                         }}
                       >
-                        {entry.start}
-                        {heeftEind ? ` – ${entry.end}` : ' – ⋯?'}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                        🚩
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* scheidingslijn */}
+                <div style={{ height: 1, background: colors.line, margin: '4px 0 12px' }} />
+
+                {/* Leden */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {rijen.map((entry) => {
+                    const linksPx = pixelFor(entry.start);
+                    const heeftEind = entry.end != null;
+                    const breedtePx = heeftEind ? Math.max(pixelFor(entry.end) - linksPx, 8) : null;
+
+                    return (
+                      <Link key={entry.id} href={`/entry/${entry.id}`} style={{ textDecoration: 'none' }}>
+                        <div style={{ position: 'relative', height: 24 }}>
+                          <div
+                            style={{
+                              position: 'sticky',
+                              left: 0,
+                              zIndex: 2,
+                              width: NAAM_KOLOM,
+                              background: colors.paperCard,
+                              fontFamily: fonts.display,
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: colors.ink,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              height: 24,
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title={entry.naam}
+                          >
+                            {entry.naam}
+                          </div>
+
+                          {heeftEind ? (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: linksPx,
+                                width: breedtePx,
+                                top: 3,
+                                height: 18,
+                                background: colors.forest,
+                                borderRadius: radius.input,
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: linksPx,
+                                top: 2,
+                                height: 20,
+                                minWidth: 36,
+                                padding: '0 6px',
+                                background: colors.campfireLight,
+                                border: `1.5px dashed ${colors.campfire}`,
+                                borderRadius: radius.input,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <span style={{ fontFamily: fonts.body, fontSize: 11, fontWeight: 700, color: colors.campfire }}>
+                                ⋯?
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
+
+            <style jsx>{`
+              .vb-jaarslider {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 100%;
+                height: 10px;
+                border-radius: 999px;
+                background: linear-gradient(90deg, ${colors.forest}, ${colors.campfire});
+                outline: none;
+                cursor: pointer;
+              }
+              .vb-jaarslider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: ${colors.paperCard};
+                border: 3px solid ${colors.campfire};
+                box-shadow: 0 1px 4px rgba(44, 36, 25, 0.3);
+                cursor: pointer;
+              }
+              .vb-jaarslider::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: ${colors.paperCard};
+                border: 3px solid ${colors.campfire};
+                cursor: pointer;
+              }
+            `}</style>
+          </>
+        )}
+
+        {/* Detail geselecteerde mijlpaal */}
+        {geselecteerdeMijlpaal && (
+          <div
+            style={{
+              marginTop: 20,
+              background: colors.paperCard,
+              border: `1.5px solid ${colors.campfire}`,
+              borderRadius: radius.card,
+              padding: '20px 22px',
+              display: 'flex',
+              gap: 16,
+              alignItems: 'flex-start',
+            }}
+          >
+            {geselecteerdeMijlpaal.afbeeldingUrl && (
+              <img
+                src={geselecteerdeMijlpaal.afbeeldingUrl}
+                alt=""
+                style={{ width: 80, height: 80, borderRadius: radius.card, objectFit: 'cover', flexShrink: 0 }}
+              />
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: fonts.display, fontSize: 20, fontWeight: 700, color: colors.ink }}>
+                {geselecteerdeMijlpaal.jaar} — {geselecteerdeMijlpaal.titel}
+              </div>
+              {geselecteerdeMijlpaal.beschrijving && (
+                <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, marginTop: 6, lineHeight: 1.5 }}>
+                  {geselecteerdeMijlpaal.beschrijving}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setGeselecteerdeMijlpaal(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: 18,
+                color: colors.inkMuted,
+                cursor: 'pointer',
+              }}
+              aria-label="Sluiten"
+            >
+              ✕
+            </button>
           </div>
         )}
+
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <Link
+            href="/mijlpaal-toevoegen"
+            style={{
+              fontFamily: fonts.body,
+              fontSize: 13,
+              fontWeight: 600,
+              color: colors.forest,
+              textDecoration: 'none',
+            }}
+          >
+            🚩 Ken jij nog een belangrijke mijlpaal? Stel ze voor →
+          </Link>
+        </div>
 
         {zonderJaar.length > 0 && (
           <div style={{ marginTop: 40 }}>
@@ -261,6 +416,29 @@ export default function TijdlijnPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function RijLabel({ children }) {
+  return (
+    <div
+      style={{
+        position: 'sticky',
+        left: 0,
+        zIndex: 2,
+        width: NAAM_KOLOM,
+        background: colors.paperCard,
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 700,
+        color: colors.inkMuted,
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      {children}
     </div>
   );
 }

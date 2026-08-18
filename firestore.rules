@@ -46,5 +46,36 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    match /badges/{badgeId} {
+      // Jaarkentekens zijn publiek leesbaar (tijdlijn), enkel beheerders schrijven.
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /milestones/{milestoneId} {
+      // Gepubliceerde mijlpalen zijn publiek leesbaar; beheerders zien alles
+      // (ook 'pending', voor goedkeuring).
+      allow read: if resource.data.status == 'published' || request.auth != null;
+      allow write: if request.auth != null;
+
+      // Publiek mijlpaal-voorstel (/mijlpaal-toevoegen): niet-ingelogde
+      // bezoekers mogen een NIEUWE mijlpaal aanmaken, maar altijd als
+      // 'pending', zonder afbeelding, en met beperkte veldgroottes — de
+      // beheerder moet dit nog goedkeuren voor het publiek zichtbaar wordt.
+      allow create: if request.auth == null
+        && request.resource.data.status == 'pending'
+        && request.resource.data.afbeeldingUrl == null
+        && request.resource.data.afbeeldingPath == null
+        && request.resource.data.jaar is int
+        && request.resource.data.jaar > 1900
+        && request.resource.data.jaar < 2200
+        && request.resource.data.titel is string
+        && request.resource.data.titel.size() < 200
+        && request.resource.data.beschrijving is string
+        && request.resource.data.beschrijving.size() < 1000
+        && request.resource.data.contactEmail is string
+        && request.resource.data.contactEmail.size() < 200;
+    }
   }
 }
