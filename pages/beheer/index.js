@@ -108,6 +108,12 @@ function BeheerContent() {
             <Link href="/beheer/links" style={secondaryLink}>
               🔗 Links
             </Link>
+            <Link href="/beheer/kentekens" style={secondaryLink}>
+              🎖️ Kentekens
+            </Link>
+            <Link href="/beheer/mijlpalen" style={secondaryLink}>
+              🚩 Mijlpalen
+            </Link>
             <Link href="/beheer/upload" style={secondaryLink}>
               + Eén scan
             </Link>
