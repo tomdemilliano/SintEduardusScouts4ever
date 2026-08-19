@@ -1,0 +1,248 @@
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import Link from 'next/link';
+import { PhotoFactory } from '../../lib/dbSchema';
+import { colors, fonts, fontImports, radius } from '../../lib/theme';
+import PublicNav from '../../components/PublicNav';
+import MemberTagPicker from '../../components/MemberTagPicker';
+
+export default function FotoDetailPage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const [foto, setFoto] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [afbeeldingFout, setAfbeeldingFout] = useState(false);
+
+  const [jaar, setJaar] = useState('');
+  const [locatie, setLocatie] = useState('');
+  const [ledenTags, setLedenTags] = useState([]);
+  const [opslaanBezig, setOpslaanBezig] = useState(false);
+  const [opgeslagen, setOpgeslagen] = useState(false);
+
+  const [verwijderReden, setVerwijderReden] = useState('');
+  const [verwijderBezig, setVerwijderBezig] = useState(false);
+  const [verwijderVerzonden, setVerwijderVerzonden] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    PhotoFactory.getById(id).then((f) => {
+      const geldig = f && f.status === 'published';
+      setFoto(geldig ? f : null);
+      if (geldig) {
+        setJaar(f.jaar ? String(f.jaar) : '');
+        setLocatie(f.locatie || '');
+        setLedenTags(f.ledenTags || []);
+      }
+      setLoading(false);
+    });
+  }, [id]);
+
+  const opslaan = async () => {
+    setOpslaanBezig(true);
+    try {
+      await PhotoFactory.updateTags(id, {
+        jaar: jaar ? parseInt(jaar, 10) : null,
+        locatie: locatie.trim(),
+        ledenTags,
+      });
+      setOpgeslagen(true);
+      setTimeout(() => setOpgeslagen(false), 2500);
+    } finally {
+      setOpslaanBezig(false);
+    }
+  };
+
+  const vraagVerwijdering = async () => {
+    setVerwijderBezig(true);
+    try {
+      await PhotoFactory.requestDelete(id, verwijderReden.trim());
+      setVerwijderVerzonden(true);
+    } finally {
+      setVerwijderBezig(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'transparent', padding: 48 }}>
+        <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>
+      </div>
+    );
+  }
+
+  if (!foto) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'transparent', padding: 48, textAlign: 'center' }}>
+        <p style={{ fontFamily: fonts.body, color: colors.stamp, marginBottom: 12 }}>
+          Deze foto bestaat niet (meer) of is nog niet gepubliceerd.
+        </p>
+        <Link href="/fotos" style={{ fontFamily: fonts.body, color: colors.forest }}>
+          ← Terug naar de foto's
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Head>
+        <link rel="stylesheet" href={fontImports} />
+        <title>Foto — Vrienden van Sint-Eduardusscouts</title>
+      </Head>
+
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 20px 100px' }}>
+        <PublicNav />
+
+        <Link href="/fotos" style={{ display: 'inline-block', margin: '20px 0', fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, textDecoration: 'none' }}>
+          ← Terug naar de foto's
+        </Link>
+
+        <div style={{ background: colors.paperCard, border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden', marginBottom: 20 }}>
+          {afbeeldingFout ? (
+            <div style={{ padding: 40, textAlign: 'center' }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🖼️</div>
+              <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 }}>
+                Deze afbeelding kan hier niet getoond worden.
+              </p>
+              <a href={foto.afbeeldingUrl} target="_blank" rel="noopener noreferrer" style={{ fontFamily: fonts.body, fontSize: 13, fontWeight: 600, color: colors.forest }}>
+                Bekijk de originele link →
+              </a>
+            </div>
+          ) : (
+            <img src={foto.afbeeldingUrl} alt="" onError={() => setAfbeeldingFout(true)} style={{ width: '100%', display: 'block' }} />
+          )}
+        </div>
+
+        {verwijderVerzonden ? (
+          <div style={{ background: colors.campfireLight, border: `1.5px solid ${colors.campfire}`, borderRadius: radius.card, padding: '16px 18px', marginBottom: 20 }}>
+            <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, margin: 0 }}>
+              ✓ Je verwijderverzoek is verstuurd. De beheerder bekijkt het nog even.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div style={{ background: colors.paperCard, border: `1px solid ${colors.line}`, borderRadius: radius.card, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+              <div>
+                <Label>Jaar</Label>
+                <input
+                  type="number"
+                  value={jaar}
+                  onChange={(e) => setJaar(e.target.value)}
+                  placeholder="bv. 1978"
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <Label>Locatie</Label>
+                <input
+                  type="text"
+                  value={locatie}
+                  onChange={(e) => setLocatie(e.target.value)}
+                  placeholder="bv. Falmignoul (Walzin)"
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <Label>Wie staat erop?</Label>
+                <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={opslaan}
+                  disabled={opslaanBezig}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: radius.badge,
+                    border: 'none',
+                    background: opslaanBezig ? colors.inkMuted : colors.forest,
+                    color: colors.white,
+                    fontFamily: fonts.body,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: opslaanBezig ? 'default' : 'pointer',
+                  }}
+                >
+                  {opslaanBezig ? 'Bezig…' : 'Opslaan'}
+                </button>
+                {opgeslagen && (
+                  <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forest, fontWeight: 600 }}>
+                    ✓ Opgeslagen
+                  </span>
+                )}
+              </div>
+              <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: 0 }}>
+                Iedereen kan deze gegevens aanvullen of corrigeren — zo helpen we samen de foto's te sorteren.
+              </p>
+            </div>
+
+            <details>
+              <summary style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, cursor: 'pointer' }}>
+                Hoort deze foto hier niet thuis? Vraag verwijdering aan
+              </summary>
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <textarea
+                  value={verwijderReden}
+                  onChange={(e) => setVerwijderReden(e.target.value)}
+                  placeholder="Reden (optioneel)"
+                  rows={2}
+                  style={{ ...inputStyle, resize: 'vertical' }}
+                />
+                <button
+                  onClick={vraagVerwijdering}
+                  disabled={verwijderBezig}
+                  style={{
+                    alignSelf: 'flex-start',
+                    padding: '8px 16px',
+                    borderRadius: radius.badge,
+                    border: 'none',
+                    background: colors.stamp,
+                    color: colors.white,
+                    fontFamily: fonts.body,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: verwijderBezig ? 'default' : 'pointer',
+                  }}
+                >
+                  {verwijderBezig ? 'Bezig…' : 'Verwijdering aanvragen'}
+                </button>
+              </div>
+            </details>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Label({ children }) {
+  return (
+    <label
+      style={{
+        display: 'block',
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 600,
+        color: colors.inkMuted,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        marginBottom: 4,
+      }}
+    >
+      {children}
+    </label>
+  );
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '10px 12px',
+  borderRadius: radius.input,
+  border: `1px solid ${colors.line}`,
+  background: colors.white,
+  fontFamily: fonts.body,
+  fontSize: 14,
+  color: colors.ink,
+  boxSizing: 'border-box',
+};
