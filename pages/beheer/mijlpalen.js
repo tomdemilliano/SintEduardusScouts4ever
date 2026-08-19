@@ -12,7 +12,10 @@ export default function MijlpalenPage() {
   );
 }
 
-const leegNieuw = { jaar: '', titel: '', beschrijving: '' };
+const TYPE_ICOON = { scouting: '⚜️', groep: '🚩' };
+const TYPE_LABEL = { scouting: 'Scouting-mijlpaal', groep: 'Groeps-mijlpaal' };
+
+const leegNieuw = { jaar: '', titel: '', beschrijving: '', type: 'groep' };
 
 function MijlpalenContent() {
   const [mijlpalen, setMijlpalen] = useState([]);
@@ -46,6 +49,7 @@ function MijlpalenContent() {
         jaar: jaarNum,
         titel: nieuw.titel.trim(),
         beschrijving: nieuw.beschrijving.trim(),
+        type: nieuw.type,
         file: nieuwBestand,
       });
       setNieuw(leegNieuw);
@@ -97,7 +101,8 @@ function MijlpalenContent() {
           Mijlpalen
         </h1>
         <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 28 }}>
-          Belangrijke momenten uit de geschiedenis van de groep, te zien op de tijdlijn.
+          Belangrijke momenten uit de geschiedenis van de groep (🚩), of uit
+          de scoutsbeweging in het algemeen (⚜️), te zien op de tijdlijn.
         </p>
 
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
@@ -130,7 +135,10 @@ function MijlpalenContent() {
                     }}
                   >
                     <div style={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 600, color: colors.ink }}>
-                      {m.jaar} — {m.titel}
+                      {TYPE_ICOON[m.type] || '🚩'} {m.jaar} — {m.titel}
+                    </div>
+                    <div style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, marginTop: 2 }}>
+                      {TYPE_LABEL[m.type] || TYPE_LABEL.groep}
                     </div>
                     {m.beschrijving && (
                       <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, margin: '6px 0' }}>
@@ -176,6 +184,9 @@ function MijlpalenContent() {
           <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.inkMuted }}>
             Mijlpaal toevoegen
           </div>
+
+          <TypeKiezer waarde={nieuw.type} onChange={(type) => setNieuw((p) => ({ ...p, type }))} />
+
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div>
               <label style={labelStyle}>Jaar</label>
@@ -261,10 +272,13 @@ function MijlpalenContent() {
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: fonts.display, fontSize: 15, fontWeight: 600, color: colors.ink }}>
-                    {m.jaar} — {m.titel}
+                    {TYPE_ICOON[m.type] || '🚩'} {m.jaar} — {m.titel}
+                  </div>
+                  <div style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted }}>
+                    {TYPE_LABEL[m.type] || TYPE_LABEL.groep}
                   </div>
                   {m.beschrijving && (
-                    <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>{m.beschrijving}</div>
+                    <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, marginTop: 2 }}>{m.beschrijving}</div>
                   )}
                 </div>
                 <button onClick={() => setBewerkId(m.id)} style={btn(colors.inkMuted)}>
@@ -286,10 +300,41 @@ function MijlpalenContent() {
   );
 }
 
+function TypeKiezer({ waarde, onChange }) {
+  return (
+    <div>
+      <label style={labelStyle}>Soort mijlpaal</label>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {['groep', 'scouting'].map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => onChange(type)}
+            style={{
+              padding: '8px 14px',
+              borderRadius: 999,
+              border: `1.5px solid ${waarde === type ? colors.forest : colors.line}`,
+              background: waarde === type ? colors.forest : colors.white,
+              color: waarde === type ? colors.white : colors.ink,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {TYPE_ICOON[type]} {TYPE_LABEL[type]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MijlpaalBewerkForm({ mijlpaal, onOpslaan, onAnnuleren, achtergrond, rand }) {
   const [jaar, setJaar] = useState(String(mijlpaal.jaar));
   const [titel, setTitel] = useState(mijlpaal.titel || '');
   const [beschrijving, setBeschrijving] = useState(mijlpaal.beschrijving || '');
+  const [type, setType] = useState(mijlpaal.type || 'groep');
   const [bestand, setBestand] = useState(null);
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState(null);
@@ -303,7 +348,7 @@ function MijlpaalBewerkForm({ mijlpaal, onOpslaan, onAnnuleren, achtergrond, ran
     setBezig(true);
     setFout(null);
     try {
-      await onOpslaan({ jaar: jaarNum, titel: titel.trim(), beschrijving: beschrijving.trim() }, bestand);
+      await onOpslaan({ jaar: jaarNum, titel: titel.trim(), beschrijving: beschrijving.trim(), type }, bestand);
     } catch (err) {
       setFout('Opslaan mislukt, probeer opnieuw.');
     } finally {
@@ -330,6 +375,7 @@ function MijlpaalBewerkForm({ mijlpaal, onOpslaan, onAnnuleren, achtergrond, ran
           style={{ width: 60, height: 60, borderRadius: radius.input, objectFit: 'cover' }}
         />
       )}
+      <TypeKiezer waarde={type} onChange={setType} />
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <div>
           <label style={labelStyle}>Jaar</label>
