@@ -146,15 +146,45 @@ lib/auth.js            Login/logout voor beheerders
 lib/dbSchema.js         Factory-pattern: alle Firestore/Storage-toegang
 lib/theme.js            Design tokens (kleuren, fonts)
 components/EntryForm.js Herbruikbaar upload+bewerk-formulier
-components/RequireAuth.js Schermt /beheer-pagina's af
+components/RequireAuth.js Schermt /beheer-pagina's af, toont AdminNav
+components/AdminNav.js    Hoofdnavigatie binnen /beheer
+components/AdminSubNav.js Sub-tabs binnen een beheersectie
 pages/index.js           Publieke galerij
 pages/entry/[id].js       Publieke detailpagina per persoon
-pages/beheer/login.js     Inlogpagina
-pages/beheer/index.js     Overzicht: concepten + gepubliceerd
-pages/beheer/upload.js    Nieuwe scan uploaden + herkennen
-pages/beheer/[id].js      Bestaande entry bewerken
-pages/api/extract.js      Server-route die Claude aanroept voor herkenning
 ```
+
+## Beheer-structuur (bijgewerkt)
+
+Het beheergedeelte is heringedeeld in duidelijke secties, met een vaste
+navigatiebalk (`components/AdminNav.js`) bovenaan elke `/beheer/*`-pagina:
+
+```
+/beheer                        Dashboard: statistieken + "te behandelen"
+/beheer/vriendenboek           Overzicht van alle formulieren (was: /beheer)
+/beheer/vriendenboek/upload        + Eén scan
+/beheer/vriendenboek/bulk-upload   + Meerdere scans
+/beheer/vriendenboek/[id]          Een formulier bewerken
+/beheer/kampplaatsen           Kampplaatsen uit de vriendenboekjes koppelen
+/beheer/kampplaatsen/extra         Extra/voorgestelde kampplaatsen
+/beheer/tijdlijn                Mijlpalen beheren/goedkeuren
+/beheer/tijdlijn/kentekens          Jaarkentekens beheren
+/beheer/gerechten               Gerechten & recepten
+/beheer/links                   Links beheren
+/beheer/login                   Inloggen
+```
+
+Secties met meerdere sub-pagina's (Vriendenboek, Kampplaatsen, Tijdlijn)
+tonen ook nog een rij tabbladen (`components/AdminSubNav.js`) om tussen
+hun eigen sub-pagina's te wisselen.
+
+Het **dashboard** op `/beheer` haalt statistieken op over alle onderdelen
+en toont een "Te behandelen"-lijst met alles wat nog actie nodig heeft:
+concept-formulieren, niet-gekoppelde kampplaatsen, nog goed te keuren
+extra kampplaatsen en mijlpalen, en een ontbrekend jaarkenteken voor het
+huidige werkingsjaar. Is er niets te doen, dan verschijnt gewoon een
+🎉-melding.
+
+
 
 ## Uitgebreide tijdlijn (kentekens, mijlpalen, jaren-slider)
 
