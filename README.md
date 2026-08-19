@@ -223,3 +223,53 @@ verbreed naar alle submappen (`{allPaths=**}`) zodat dit meteen werkt.
 - Wil je meerdere beheerders met verschillende rechten, of scans in bulk
   uploaden in plaats van één voor één? Dat is een kleine uitbreiding op
   deze basis.
+
+## Foto's (echte upload naar Firebase Storage)
+
+Foto's worden rechtstreeks geüpload naar Firebase Storage (onder
+`vriendenboekje/fotos/...`, publiek leesbaar) — geen externe links meer
+naar Drive/OneDrive nodig. Elke foto is een los Firestore-document met
+eigen, optionele tags.
+
+**Automatische verkleining vóór het uploaden**: `lib/utils.js` bevat
+`resizeImageFile()`, die elke foto client-side (via canvas) herschaalt
+naar max. 1600px op de langste zijde en als JPEG (~82% kwaliteit)
+comprimeert, vóór hij naar Storage gaat. Dat houdt opslag- en
+downloadkosten laag en de galerij vlot, ook bij rechtstreeks van een
+telefoon geüploade foto's.
+
+- **Beheerder**: `/beheer/fotos` (overzicht, goedkeuren, verwijder-
+  verzoeken afhandelen) en `/beheer/fotos/toevoegen` (bulk: kies zoveel
+  foto's als je wil in één keer, ze worden verkleind + geüpload + meteen
+  gepubliceerd, met optioneel een gedeeld jaar/locatie voor de hele
+  selectie, en een statuslijst per foto tijdens het verwerken).
+- **Bezoeker**: `/foto-toevoegen` (ook in bulk, met e-mailadres + rekensom
+  + honeypot, komt binnen als `pending`) en `/fotos` (bladeren, filteren
+  op jaar/locatie/naam, filter "nog niet getagd").
+- **Crowdsourced taggen**: op `/fotos/[id]` kan **iedereen**, zonder in te
+  loggen, het jaar, de locatie en wie erop staat aanpassen op een reeds
+  gepubliceerde foto — bewust zonder goedkeuringsstap, want anders is
+  "help mee sorteren" bij een hele map door-elkaar-foto's niet haalbaar.
+  Een **verwijderverzoek** ("hoort hier niet thuis") is wel gewoon een
+  vlag die de beheerder moet bevestigen — dat is destructief, dus dat
+  blijft beheerder-only. Verwijdert de beheerder een foto definitief, dan
+  wordt ook het bestand in Storage mee opgeruimd.
+- **Leden taggen**: `components/MemberTagPicker.js` zoekt in de bestaande
+  gepubliceerde vriendenboekje-namen (klik om te koppelen aan het profiel)
+  of laat een vrije naam toe (Enter) voor wie niet in het vriendenboekje
+  staat.
+
+Nieuwe Firestore-collectie: `photos` (velden `afbeeldingUrl` +
+`afbeeldingPath`, i.p.v. een externe `url`). De rules zijn hier het meest
+uitgebreid van de hele app: publieke *create* is beperkt (altijd
+`pending`), publieke *update* mag enkel op een reeds gepubliceerde foto en
+enkel de tag-velden wijzigen (`afbeeldingUrl`, `afbeeldingPath`,
+`contactEmail`, `status`, `createdAt` moeten identiek blijven).
+
+**Storage-rules**: `vriendenboekje/fotos/{fileName}` staat, als enige plek
+in de hele app, toe dat **niet-ingelogde bezoekers zelf een nieuw bestand
+uploaden** — noodzakelijk voor de publieke inzending. Dat is begrensd tot
+afbeeldingen onder de 8MB; bestaande bestanden overschrijven of
+verwijderen kan enkel als beheerder. De echte inhoudelijke controle zit in
+de goedkeuringsstap (Firestore `status: 'pending'`), niet in de
+Storage-regel zelf.
