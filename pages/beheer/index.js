@@ -102,6 +102,9 @@ function BeheerContent() {
             <Link href="/beheer/locaties" style={secondaryLink}>
               📍 Kampplaatsen
             </Link>
+            <Link href="/beheer/extra-locaties" style={secondaryLink}>
+              🗺️ Extra kampplaatsen
+            </Link>
             <Link href="/beheer/gerechten" style={secondaryLink}>
               🍽️ Gerechten
             </Link>
