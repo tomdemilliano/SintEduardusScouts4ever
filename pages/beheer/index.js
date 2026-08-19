@@ -1,331 +1,231 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory, LocationFactory } from '../../lib/dbSchema';
+import {
+  EntryFactory,
+  LocationFactory,
+  ExtraLocationFactory,
+  MijlpaalFactory,
+  KentekenFactory,
+  LinkFactory,
+} from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
-import { toTextArray } from '../../lib/utils';
+import { toTextArray, huidigWerkingsjaarStart } from '../../lib/utils';
 import RequireAuth from '../../components/RequireAuth';
 
-export default function BeheerPage() {
+export default function DashboardPage() {
   return (
     <RequireAuth>
-      <BeheerContent />
+      <DashboardContent />
     </RequireAuth>
   );
 }
 
-function BeheerContent() {
-  const [entries, setEntries] = useState([]);
-  const [gekoppeldeLocaties, setGekoppeldeLocaties] = useState(new Set());
+function DashboardContent() {
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('alle'); // alle | draft | published
-  const [kampplaatsFilter, setKampplaatsFilter] = useState('alle'); // alle | niet-gekoppeld
-
-  const load = async () => {
-    setLoading(true);
-    const [all, locaties] = await Promise.all([EntryFactory.getAll(), LocationFactory.getAll()]);
-    setEntries(all);
-    setGekoppeldeLocaties(new Set(locaties.map((l) => l.id))); // l.id = genormaliseerde naam
-    setLoading(false);
-  };
+  const [stats, setStats] = useState(null);
+  const [todos, setTodos] = useState([]);
 
   useEffect(() => {
-    load();
-  }, []);
+    Promise.all([
+      EntryFactory.getAll(),
+      LocationFactory.getAll(),
+      ExtraLocationFactory.getAllAdmin(),
+      MijlpaalFactory.getAllAdmin(),
+      KentekenFactory.getAll(),
+      LinkFactory.getAll(),
+    ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links]) => {
+      const gepubliceerdeEntries = entries.filter((e) => e.status === 'published');
+      const conceptEntries = entries.filter((e) => e.status !== 'published');
 
-  const handlePublish = async (id) => {
-    await EntryFactory.publish(id);
-    load();
-  };
+      const gekoppeldeLocaties = new Set(locaties.map((l) => l.id));
+      const entriesNietGekoppeld = entries.filter((entry) => {
+        const plaatsen = toTextArray(entry.besteKampplaats).filter(Boolean);
+        if (plaatsen.length === 0) return false;
+        return plaatsen.some((p) => !gekoppeldeLocaties.has(p.trim().toLowerCase()));
+      });
 
-  const handleUnpublish = async (id) => {
-    await EntryFactory.unpublish(id);
-    load();
-  };
+      const extraPending = extraLocaties.filter((l) => l.status === 'pending');
+      const mijlpalenPending = mijlpalen.filter((m) => m.status === 'pending');
+      const mijlpalenGepubliceerd = mijlpalen.filter((m) => m.status === 'published');
 
-  const handleDelete = async (entry) => {
-    if (!confirm(`"${entry.naam}" definitief verwijderen?`)) return;
-    await EntryFactory.remove(entry.id, entry.scanPath);
-    load();
-  };
+      const huidigJaar = huidigWerkingsjaarStart();
+      const heeftHuidigKenteken = kentekens.some((k) => k.startJaar === huidigJaar);
 
-  /**
-   * Geeft de koppelstatus van de kampplaatsen van een entry terug:
-   * 'geen' (niets ingevuld), 'volledig' (alles gekoppeld), 'deels' of 'niet'.
-   */
-  const kampplaatsStatus = (entry) => {
-    const plaatsen = toTextArray(entry.besteKampplaats).filter(Boolean);
-    if (plaatsen.length === 0) return { type: 'geen', linked: 0, total: 0 };
-    const linked = plaatsen.filter((p) => gekoppeldeLocaties.has(p.trim().toLowerCase())).length;
-    if (linked === plaatsen.length) return { type: 'volledig', linked, total: plaatsen.length };
-    if (linked === 0) return { type: 'niet', linked, total: plaatsen.length };
-    return { type: 'deels', linked, total: plaatsen.length };
-  };
+      setStats({
+        entriesTotaal: entries.length,
+        entriesGepubliceerd: gepubliceerdeEntries.length,
+        entriesConcept: conceptEntries.length,
+        kampplaatsenGekoppeld: locaties.length,
+        extraLocatiesGepubliceerd: extraLocaties.filter((l) => l.status === 'published').length,
+        mijlpalenGepubliceerd: mijlpalenGepubliceerd.length,
+        kentekens: kentekens.length,
+        links: links.length,
+      });
 
-  const gefilterd = useMemo(() => {
-    return entries.filter((entry) => {
-      if (statusFilter !== 'alle' && entry.status !== statusFilter) return false;
-      if (kampplaatsFilter === 'niet-gekoppeld') {
-        const { type } = kampplaatsStatus(entry);
-        if (type !== 'niet' && type !== 'deels') return false;
+      const lijst = [];
+      if (conceptEntries.length > 0) {
+        lijst.push({
+          href: '/beheer/vriendenboek',
+          label: `${conceptEntries.length} vriendenboek-formulier${conceptEntries.length === 1 ? '' : 'en'} wachten op publicatie`,
+          icon: '📖',
+        });
       }
-      return true;
+      if (entriesNietGekoppeld.length > 0) {
+        lijst.push({
+          href: '/beheer/kampplaatsen',
+          label: `${entriesNietGekoppeld.length} kampplaats${entriesNietGekoppeld.length === 1 ? '' : 'en'} nog niet (volledig) gekoppeld aan de kaart`,
+          icon: '📍',
+        });
+      }
+      if (extraPending.length > 0) {
+        lijst.push({
+          href: '/beheer/kampplaatsen/extra',
+          label: `${extraPending.length} extra kampplaats${extraPending.length === 1 ? '' : 'en'} wachten op goedkeuring`,
+          icon: '🗺️',
+        });
+      }
+      if (mijlpalenPending.length > 0) {
+        lijst.push({
+          href: '/beheer/tijdlijn',
+          label: `${mijlpalenPending.length} mijlpaal${mijlpalenPending.length === 1 ? '' : 'en'} wachten op goedkeuring`,
+          icon: '🚩',
+        });
+      }
+      if (!heeftHuidigKenteken) {
+        lijst.push({
+          href: '/beheer/tijdlijn/kentekens',
+          label: `Nog geen jaarkenteken voor het huidige werkingsjaar (${huidigJaar}–${huidigJaar + 1})`,
+          icon: '🧭',
+        });
+      }
+      setTodos(lijst);
+      setLoading(false);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, statusFilter, kampplaatsFilter, gekoppeldeLocaties]);
-
-  const aantalDraft = entries.filter((e) => e.status !== 'published').length;
-  const aantalNietGekoppeld = entries.filter((e) => {
-    const { type } = kampplaatsStatus(e);
-    return type === 'niet' || type === 'deels';
-  }).length;
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
-        <title>Beheer — Vriendenboekje</title>
+        <title>Dashboard — Beheer</title>
       </Head>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '48px 20px 80px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: 0 }}>
-              Beheer
-            </h1>
-            <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, margin: '6px 0 0' }}>
-              {entries.length} formulier{entries.length === 1 ? '' : 'en'} ·{' '}
-              {entries.filter((e) => e.status === 'published').length} gepubliceerd
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Link href="/beheer/locaties" style={secondaryLink}>
-              📍 Kampplaatsen
-            </Link>
-            <Link href="/beheer/extra-locaties" style={secondaryLink}>
-              🗺️ Extra kampplaatsen
-            </Link>
-            <Link href="/beheer/gerechten" style={secondaryLink}>
-              🍽️ Gerechten
-            </Link>
-            <Link href="/beheer/links" style={secondaryLink}>
-              🔗 Links
-            </Link>
-            <Link href="/beheer/kentekens" style={secondaryLink}>
-              🎖️ Kentekens
-            </Link>
-            <Link href="/beheer/mijlpalen" style={secondaryLink}>
-              🚩 Mijlpalen
-            </Link>
-            <Link href="/beheer/upload" style={secondaryLink}>
-              + Eén scan
-            </Link>
-            <Link href="/beheer/bulk-upload" style={primaryLink}>
-              + Meerdere scans
-            </Link>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 24, alignItems: 'center' }}>
-          <FilterGroup label="Status">
-            <FilterButton active={statusFilter === 'alle'} onClick={() => setStatusFilter('alle')}>
-              Alle
-            </FilterButton>
-            <FilterButton active={statusFilter === 'draft'} onClick={() => setStatusFilter('draft')}>
-              Concepten {aantalDraft > 0 && `(${aantalDraft})`}
-            </FilterButton>
-            <FilterButton active={statusFilter === 'published'} onClick={() => setStatusFilter('published')}>
-              Gepubliceerd
-            </FilterButton>
-          </FilterGroup>
-
-          <FilterGroup label="Kampplaats">
-            <FilterButton active={kampplaatsFilter === 'alle'} onClick={() => setKampplaatsFilter('alle')}>
-              Alle
-            </FilterButton>
-            <FilterButton
-              active={kampplaatsFilter === 'niet-gekoppeld'}
-              onClick={() => setKampplaatsFilter('niet-gekoppeld')}
-            >
-              Niet gekoppeld {aantalNietGekoppeld > 0 && `(${aantalNietGekoppeld})`}
-            </FilterButton>
-          </FilterGroup>
-        </div>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 20px 80px' }}>
+        <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: '0 0 24px' }}>
+          Dashboard
+        </h1>
 
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {gefilterd.map((entry) => {
-            const kampplaatsInfo = kampplaatsStatus(entry);
-            return (
+        {!loading && stats && (
+          <>
+            {/* Te behandelen */}
+            <div style={{ marginBottom: 32 }}>
+              <SectieTitel>Te behandelen</SectieTitel>
+              {todos.length === 0 ? (
+                <div
+                  style={{
+                    background: colors.paperCard,
+                    border: `1px solid ${colors.line}`,
+                    borderRadius: radius.card,
+                    padding: '18px 20px',
+                    fontFamily: fonts.body,
+                    fontSize: 14,
+                    color: colors.forest,
+                    fontWeight: 600,
+                  }}
+                >
+                  🎉 Alles is bijgewerkt — niets wacht op actie.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {todos.map((todo, i) => (
+                    <Link key={i} href={todo.href} style={{ textDecoration: 'none' }}>
+                      <div
+                        style={{
+                          background: colors.campfireLight,
+                          border: `1.5px solid ${colors.campfire}`,
+                          borderRadius: radius.card,
+                          padding: '14px 18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                        }}
+                      >
+                        <span style={{ fontSize: 20 }}>{todo.icon}</span>
+                        <span style={{ fontFamily: fonts.body, fontSize: 14, fontWeight: 600, color: colors.ink, flex: 1 }}>
+                          {todo.label}
+                        </span>
+                        <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.campfire, fontWeight: 600 }}>
+                          Bekijken →
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Statistieken */}
+            <div>
+              <SectieTitel>Statistieken</SectieTitel>
               <div
-                key={entry.id}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
                   gap: 12,
-                  padding: '14px 18px',
-                  background: colors.paperCard,
-                  border: `1px solid ${colors.line}`,
-                  borderRadius: radius.card,
-                  flexWrap: 'wrap',
                 }}
               >
-                <div>
-                  <div style={{ fontFamily: fonts.display, fontSize: 18, fontWeight: 600, color: colors.ink }}>
-                    {entry.naam || '(naamloos)'}{' '}
-                    <span style={{ fontFamily: fonts.body, fontSize: 13, fontWeight: 400, color: colors.inkMuted }}>
-                      {entry.totemnaam && `— ${entry.totemnaam}`}
-                    </span>
-                  </div>
-                  <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, marginTop: 2, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span>{entry.periode || 'periode onbekend'}</span>
-                    <span style={{ color: entry.status === 'published' ? colors.forest : colors.campfire, fontWeight: 600 }}>
-                      {entry.status === 'published' ? 'Gepubliceerd' : 'Concept'}
-                    </span>
-                    <KampplaatsBadge status={kampplaatsInfo} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Link href={`/beheer/${entry.id}`} style={btnStyleOutline}>
-                    Bewerken
-                  </Link>
-                  {entry.status === 'published' ? (
-                    <button onClick={() => handleUnpublish(entry.id)} style={btnStyle(colors.inkMuted)}>
-                      Depubliceren
-                    </button>
-                  ) : (
-                    <button onClick={() => handlePublish(entry.id)} style={btnStyle(colors.forest)}>
-                      Publiceren
-                    </button>
-                  )}
-                  <button onClick={() => handleDelete(entry)} style={btnStyle(colors.stamp)}>
-                    Verwijderen
-                  </button>
-                </div>
+                <StatKaart label="Leden gepubliceerd" waarde={stats.entriesGepubliceerd} icon="📖" href="/beheer/vriendenboek" />
+                <StatKaart label="Concepten" waarde={stats.entriesConcept} icon="📝" href="/beheer/vriendenboek" />
+                <StatKaart label="Kampplaatsen gekoppeld" waarde={stats.kampplaatsenGekoppeld} icon="❤️" href="/beheer/kampplaatsen" />
+                <StatKaart label="Extra kampplaatsen" waarde={stats.extraLocatiesGepubliceerd} icon="📍" href="/beheer/kampplaatsen/extra" />
+                <StatKaart label="Mijlpalen gepubliceerd" waarde={stats.mijlpalenGepubliceerd} icon="🚩" href="/beheer/tijdlijn" />
+                <StatKaart label="Jaarkentekens" waarde={stats.kentekens} icon="🧭" href="/beheer/tijdlijn/kentekens" />
+                <StatKaart label="Links" waarde={stats.links} icon="🔗" href="/beheer/links" />
               </div>
-            );
-          })}
-        </div>
-
-        {!loading && gefilterd.length === 0 && entries.length > 0 && (
-          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>
-            Geen formulieren die aan deze filters voldoen.
-          </p>
-        )}
-        {!loading && entries.length === 0 && (
-          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>
-            Nog geen formulieren toegevoegd.
-          </p>
+            </div>
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function FilterGroup({ label, children }) {
+function SectieTitel({ children }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontFamily: fonts.body, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.inkMuted, marginRight: 2 }}>
-        {label}
-      </span>
+    <div
+      style={{
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        color: colors.inkMuted,
+        marginBottom: 10,
+      }}
+    >
       {children}
     </div>
   );
 }
 
-function FilterButton({ active, onClick, children }) {
+function StatKaart({ label, waarde, icon, href }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '5px 12px',
-        borderRadius: 999,
-        border: `1px solid ${active ? colors.forest : colors.line}`,
-        background: active ? colors.forest : 'transparent',
-        color: active ? colors.white : colors.inkMuted,
-        fontFamily: fonts.body,
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: 'pointer',
-      }}
-    >
-      {children}
-    </button>
+    <Link href={href} style={{ textDecoration: 'none' }}>
+      <div
+        style={{
+          background: colors.paperCard,
+          border: `1px solid ${colors.line}`,
+          borderRadius: radius.card,
+          padding: '16px 14px',
+        }}
+      >
+        <div style={{ fontSize: 20, marginBottom: 6 }}>{icon}</div>
+        <div style={{ fontFamily: fonts.display, fontSize: 26, fontWeight: 700, color: colors.ink }}>{waarde}</div>
+        <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted }}>{label}</div>
+      </div>
+    </Link>
   );
-}
-
-function KampplaatsBadge({ status }) {
-  if (status.type === 'geen') {
-    return <span style={{ color: colors.inkMuted }}>· geen kampplaats ingevuld</span>;
-  }
-  if (status.type === 'volledig') {
-    return (
-      <span style={{ color: colors.forest, fontWeight: 600 }}>
-        · 📍 gekoppeld{status.total > 1 ? ` (${status.total})` : ''}
-      </span>
-    );
-  }
-  if (status.type === 'deels') {
-    return (
-      <span style={{ color: colors.stamp, fontWeight: 600 }}>
-        · ⚠ {status.linked}/{status.total} kampplaatsen gekoppeld
-      </span>
-    );
-  }
-  return (
-    <span style={{ color: colors.stamp, fontWeight: 600 }}>
-      · ⚠ kampplaats{status.total > 1 ? 'en' : ''} niet gekoppeld
-    </span>
-  );
-}
-
-const secondaryLink = {
-  padding: '10px 20px',
-  borderRadius: 999,
-  border: `1px solid ${colors.line}`,
-  color: colors.ink,
-  fontFamily: fonts.body,
-  fontWeight: 600,
-  fontSize: 13,
-  textDecoration: 'none',
-};
-
-const primaryLink = {
-  padding: '10px 20px',
-  borderRadius: 999,
-  background: colors.campfire,
-  color: colors.white,
-  fontFamily: fonts.body,
-  fontWeight: 600,
-  fontSize: 13,
-  textDecoration: 'none',
-};
-
-const btnStyleOutline = {
-  padding: '7px 14px',
-  borderRadius: 999,
-  border: `1px solid ${colors.line}`,
-  color: colors.ink,
-  fontFamily: fonts.body,
-  fontSize: 12,
-  fontWeight: 600,
-  textDecoration: 'none',
-};
-
-function btnStyle(color) {
-  return {
-    padding: '7px 14px',
-    borderRadius: 999,
-    border: 'none',
-    background: color,
-    color: '#FFF',
-    fontFamily: fonts.body,
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: 'pointer',
-  };
 }
