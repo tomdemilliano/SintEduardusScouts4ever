@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory } from '../../lib/dbSchema';
+import { EntryFactory, PhotoFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import { toDishArray } from '../../lib/utils';
 
@@ -10,14 +10,19 @@ export default function EntryDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [entry, setEntry] = useState(null);
+  const [fotos, setFotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toonScan, setToonScan] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     EntryFactory.getById(id).then((e) => {
-      setEntry(e && e.status === 'published' ? e : null);
+      const geldig = e && e.status === 'published';
+      setEntry(geldig ? e : null);
       setLoading(false);
+      if (geldig) {
+        PhotoFactory.getByEntryId(id).then(setFotos);
+      }
     });
   }, [id]);
 
@@ -239,6 +244,35 @@ export default function EntryDetailPage() {
                   style={{ display: 'block', maxWidth: '100%', marginTop: 14, borderRadius: radius.card, border: `1px solid ${colors.line}` }}
                 />
               )}
+            </div>
+          )}
+
+          {fotos.length > 0 && (
+            <div style={{ marginTop: 30 }}>
+              <div
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  color: colors.forest,
+                  marginBottom: 10,
+                }}
+              >
+                📷 Foto's met {entry.naam.split(' ')[0]} ({fotos.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8 }}>
+                {fotos.map((foto) => (
+                  <Link key={foto.id} href={`/fotos/${foto.id}`} style={{ display: 'block' }}>
+                    <img
+                      src={foto.afbeeldingUrl}
+                      alt=""
+                      style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: radius.input, border: `1px solid ${colors.line}` }}
+                    />
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
