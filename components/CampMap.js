@@ -1,6 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { colors } from '../lib/theme';
 
+/**
+ * pins: { naam, lat, lng, kleur?, popupHtml? }
+ * kleur en popupHtml zijn optioneel — standaard kampvuur-oranje en een
+ * simpele naam-popup, zodat bestaande aanroepen zonder wijziging blijven werken.
+ */
 export default function CampMap({ pins }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -27,18 +32,19 @@ export default function CampMap({ pins }) {
         maxZoom: 18,
       }).addTo(map);
 
-      const markerIcon = L.divIcon({
-        className: '',
-        html: `<div style="width:16px;height:16px;border-radius:50%;background:${colors.campfire};border:3px solid ${colors.paper};box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      });
+      const maakIcon = (kleur) =>
+        L.divIcon({
+          className: '',
+          html: `<div style="width:16px;height:16px;border-radius:50%;background:${kleur};border:3px solid ${colors.paper};box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        });
 
       const bounds = [];
       pins.forEach((pin) => {
-        const marker = L.marker([pin.lat, pin.lng], { icon: markerIcon }).addTo(map);
+        const marker = L.marker([pin.lat, pin.lng], { icon: maakIcon(pin.kleur || colors.campfire) }).addTo(map);
         marker.bindPopup(
-          `<strong>${pin.naam}</strong><br/>${pin.count} vermelding${pin.count === 1 ? '' : 'en'}`
+          pin.popupHtml || `<strong>${pin.naam}</strong>${pin.count ? `<br/>${pin.count} vermelding${pin.count === 1 ? '' : 'en'}` : ''}`
         );
         bounds.push([pin.lat, pin.lng]);
       });
