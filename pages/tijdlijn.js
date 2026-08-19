@@ -53,6 +53,9 @@ export default function TijdlijnPage() {
 
   const pixelFor = (jaar) => NAAM_KOLOM + (jaar - STARTJAAR) * PX_PER_JAAR;
 
+  const mijlpalenScouting = mijlpalen.filter((m) => m.type === 'scouting');
+  const mijlpalenGroep = mijlpalen.filter((m) => m.type !== 'scouting');
+
   const tickJaren = () => {
     const ticks = [];
     for (let j = STARTJAAR; j <= eindJaar; j += 5) ticks.push(j);
@@ -214,11 +217,39 @@ export default function TijdlijnPage() {
                   </div>
                 )}
 
-                {/* Mijlpalen */}
-                {mijlpalen.length > 0 && (
+                {/* Mijlpalen — scouting (bewegingsbreed) */}
+                {mijlpalenScouting.length > 0 && (
                   <div style={{ position: 'relative', height: 34 }}>
-                    <RijLabel>🚩 Mijlpalen</RijLabel>
-                    {mijlpalen.map((m) => (
+                    <RijLabel>⚜️ Scouting</RijLabel>
+                    {mijlpalenScouting.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => setGeselecteerdeMijlpaal(m)}
+                        title={m.titel}
+                        style={{
+                          position: 'absolute',
+                          left: pixelFor(m.jaar),
+                          top: 0,
+                          transform: 'translateX(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          fontSize: 20,
+                          cursor: 'pointer',
+                          lineHeight: 1,
+                          padding: 2,
+                        }}
+                      >
+                        ⚜️
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mijlpalen — eigen groep */}
+                {mijlpalenGroep.length > 0 && (
+                  <div style={{ position: 'relative', height: 34 }}>
+                    <RijLabel>🚩 Onze groep</RijLabel>
+                    {mijlpalenGroep.map((m) => (
                       <button
                         key={m.id}
                         onClick={() => setGeselecteerdeMijlpaal(m)}
@@ -306,6 +337,22 @@ export default function TijdlijnPage() {
                   />
                 )}
                 <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      display: 'inline-block',
+                      fontFamily: fonts.body,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: geselecteerdeMijlpaal.type === 'scouting' ? colors.forestDark : colors.campfire,
+                      background: geselecteerdeMijlpaal.type === 'scouting' ? colors.campfireLight : 'transparent',
+                      border: geselecteerdeMijlpaal.type === 'scouting' ? 'none' : `1px solid ${colors.campfire}`,
+                      borderRadius: radius.badge,
+                      padding: '2px 10px',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {geselecteerdeMijlpaal.type === 'scouting' ? '⚜️ Scouting-mijlpaal' : '🚩 Mijlpaal van onze groep'}
+                  </div>
                   <div style={{ fontFamily: fonts.display, fontSize: 20, fontWeight: 700, color: colors.ink }}>
                     {geselecteerdeMijlpaal.jaar} — {geselecteerdeMijlpaal.titel}
                   </div>
