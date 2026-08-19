@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import Link from 'next/link';
 import { ExtraLocationFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import PublicNav from '../components/PublicNav';
+
+const LocationPicker = dynamic(() => import('../components/LocationPicker'), { ssr: false });
 
 function nieuweSom() {
   const a = 1 + Math.floor(Math.random() * 9);
@@ -15,12 +18,37 @@ export default function KampplaatsToevoegenPage() {
   const [naam, setNaam] = useState('');
   const [beschrijving, setBeschrijving] = useState('');
   const [email, setEmail] = useState('');
+  const [lat, setLat] = useState(null);
+  const [lng, setLng] = useState(null);
+  const [resultaten, setResultaten] = useState(null);
+  const [zoekend, setZoekend] = useState(false);
+  const [kaartOpen, setKaartOpen] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [som, setSom] = useState(() => nieuweSom());
   const [somAntwoord, setSomAntwoord] = useState('');
   const [versturen, setVersturen] = useState(false);
   const [foutmelding, setFoutmelding] = useState(null);
   const [verzonden, setVerzonden] = useState(false);
+
+  const zoekOpNaam = async () => {
+    if (!naam.trim()) return;
+    setZoekend(true);
+    setKaartOpen(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(naam)}`);
+      setResultaten(await res.json());
+    } catch (e) {
+      setResultaten([]);
+    } finally {
+      setZoekend(false);
+    }
+  };
+
+  const kiesResultaat = (r) => {
+    setLat(parseFloat(r.lat));
+    setLng(parseFloat(r.lon));
+    setResultaten(null);
+  };
 
   const handleVerstuur = async () => {
     setFoutmelding(null);
@@ -51,6 +79,8 @@ export default function KampplaatsToevoegenPage() {
       await ExtraLocationFactory.createPublic({
         naam: naam.trim(),
         beschrijving: beschrijving.trim(),
+        lat,
+        lng,
         contactEmail: email.trim(),
       });
       setVerzonden(true);
@@ -127,8 +157,8 @@ export default function KampplaatsToevoegenPage() {
           </h1>
           <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, maxWidth: 440, margin: '0 auto' }}>
             Ken je een toffe kampplaats die nog niet op de pagina staat? Vul
-            'm hieronder aan. De beheerder kijkt het na (en zet de plek op de
-            kaart) voor het gepubliceerd wordt.
+            'm hieronder aan en zet 'm meteen op de kaart. De beheerder kijkt
+            alles nog na voor het gepubliceerd wordt.
           </p>
         </div>
 
@@ -145,14 +175,83 @@ export default function KampplaatsToevoegenPage() {
         >
           <div>
             <Label>Naam van de kampplaats</Label>
-            <input
-              type="text"
-              value={naam}
-              onChange={(e) => setNaam(e.target.value)}
-              placeholder="bv. Provinciaal domein Zilvermeer, Mol"
-              style={inputStyle}
-            />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                value={naam}
+                onChange={(e) => {
+                  setNaam(e.target.value);
+                  setResultaten(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && zoekOpNaam()}
+                placeholder="bv. Provinciaal domein Zilvermeer, Mol"
+                style={{ ...inputStyle, flex: 1, minWidth: 180 }}
+              />
+              <button type="button" onClick={zoekOpNaam} disabled={zoekend || !naam.trim()} style={typeBtn(false)}>
+                {zoekend ? 'Bezig…' : '🔍 Zoek op kaart'}
+              </button>
+            </div>
+            <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, marginTop: 4 }}>
+              De naam die je hierboven intypt, wordt gebruikt om de plek op de kaart op te zoeken.
+            </p>
           </div>
+
+          {resultaten && resultaten.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {resultaten.map((r, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => kiesResultaat(r)}
+                  style={{
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    borderRadius: radius.input,
+                    border: `1px solid ${colors.line}`,
+                    background: colors.white,
+                    fontFamily: fonts.body,
+                    fontSize: 12,
+                    color: colors.ink,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {r.display_name}
+                </button>
+              ))}
+            </div>
+          )}
+          {resultaten && resultaten.length === 0 && (
+            <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, margin: 0 }}>
+              Geen resultaten gevonden — probeer een andere naam, of klik zelf op de kaart hieronder.
+            </p>
+          )}
+
+          <div>
+            <button type="button" onClick={() => setKaartOpen((v) => !v)} style={typeBtn(kaartOpen)}>
+              {kaartOpen ? 'Kaart verbergen' : '🗺️ Kaart tonen'}
+            </button>
+            {lat != null && (
+              <span style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forest, marginLeft: 8 }}>
+                ✓ locatie gekozen
+              </span>
+            )}
+          </div>
+
+          {kaartOpen && (
+            <div style={{ border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden' }}>
+              <LocationPicker
+                lat={lat}
+                lng={lng}
+                onPick={(la, ln) => {
+                  setLat(la);
+                  setLng(ln);
+                }}
+              />
+              <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: '6px 10px' }}>
+                Klik op de kaart om de pin te zetten, of sleep 'm naar de juiste plek.
+              </p>
+            </div>
+          )}
 
           <div>
             <Label>Beschrijving (optioneel)</Label>
@@ -269,3 +368,18 @@ const inputStyle = {
   color: colors.ink,
   boxSizing: 'border-box',
 };
+
+function typeBtn(actief) {
+  return {
+    padding: '9px 14px',
+    borderRadius: 999,
+    border: `1.5px solid ${actief ? colors.forest : colors.line}`,
+    background: actief ? colors.forest : colors.white,
+    color: actief ? colors.white : colors.ink,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  };
+}
