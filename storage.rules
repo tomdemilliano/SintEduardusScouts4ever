@@ -1,11 +1,55 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /scans/{fileName} {
-      // Iedereen mag scans bekijken (de publieke "bekijk origineel formulier"-knop).
+    match /organizations/{orgId}/products/{productId}/{allPaths=**} {
       allow read: if true;
-      // Enkel ingelogde beheerders mogen uploaden/verwijderen.
       allow write: if request.auth != null;
+    }
+    match /organizations/{orgId}/rewards/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /organizations/{orgId}/stores/{storeId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /organizations/{orgId}/categories/{categoryId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /organizations/{orgId}/groups/{groupId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /organizations/{orgId}/tags/{tagId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /central/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.role == 'app_admin';
+    }
+
+    // --- Vriendenboekje (sinteduardusscouts4ever): eigen folder-prefix,
+    // gescheiden van de Winkelsimpel-data hierboven. Geldt voor alle
+    // submappen (scans, kentekens, mijlpalen, ...). ---
+    match /vriendenboekje/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Foto's (/beheer/fotos en /foto-toevoegen): bezoekers mogen ZONDER
+    // login rechtstreeks een nieuwe foto uploaden (nodig voor de publieke
+    // inzending), maar enkel als het een afbeelding is onder de 8MB —
+    // ruim boven wat de client-side verkleining (~1600px, JPEG) oplevert,
+    // als extra marge. Bestaande bestanden overschrijven, aanpassen of
+    // verwijderen kan enkel als beheerder. De Firestore-kant (status
+    // 'pending' tot goedkeuring) is de eigenlijke inhoudelijke controle.
+    match /vriendenboekje/fotos/{fileName} {
+      allow read: if true;
+      allow create: if request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow update, delete: if request.auth != null;
     }
   }
 }
