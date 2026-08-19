@@ -258,6 +258,13 @@ telefoon geüploade foto's.
   gepubliceerde vriendenboekje-namen (klik om te koppelen aan het profiel)
   of laat een vrije naam toe (Enter) voor wie niet in het vriendenboekje
   staat.
+- **Extra info per foto**: een los `beschrijving`-veld, aan te vullen op
+  dezelfde manier als jaar/locatie (crowdsourced, zonder goedkeuring).
+- **Koppeling met het vriendenboekje**: elk lid-profiel (`/entry/[id]`)
+  toont onderaan een fotogalerij met alle foto's waarop die persoon getagd
+  is (via `PhotoFactory.getByEntryId`, gebaseerd op het `taggedEntryIds`-
+  veld). Op het overzicht (`/vriendenboekje`) krijgt elke kaart een klein
+  📷-icoontje met het aantal foto's waarin die persoon getagd is.
 
 Nieuwe Firestore-collectie: `photos` (velden `afbeeldingUrl` +
 `afbeeldingPath`, i.p.v. een externe `url`). De rules zijn hier het meest
