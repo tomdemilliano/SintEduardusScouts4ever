@@ -100,5 +100,45 @@ service cloud.firestore {
         && request.resource.data.contactEmail is string
         && request.resource.data.contactEmail.size() < 200;
     }
+
+    match /photos/{photoId} {
+      // Gepubliceerde foto's zijn publiek leesbaar; beheerders zien alles
+      // (ook 'pending', voor goedkeuring).
+      allow read: if resource.data.status == 'published' || request.auth != null;
+
+      // Beheerders mogen alles (toevoegen, volledig bewerken, verwijderen).
+      allow write: if request.auth != null;
+
+      // Publieke NIEUWE foto: altijd 'pending'. De afbeelding zelf wordt
+      // eerst naar Storage geüpload (zie storage.rules), dit document
+      // verwijst er enkel naar.
+      allow create: if request.auth == null
+        && request.resource.data.status == 'pending'
+        && request.resource.data.afbeeldingUrl is string
+        && request.resource.data.afbeeldingUrl.size() > 0
+        && request.resource.data.afbeeldingUrl.size() < 500
+        && request.resource.data.afbeeldingPath is string
+        && request.resource.data.contactEmail is string
+        && request.resource.data.contactEmail.size() < 200;
+
+      // Publieke BEWERKING van een reeds gepubliceerde foto: enkel de tags
+      // (jaar, locatie, ledenTags) en het verwijderverzoek mogen wijzigen —
+      // de afbeelding zelf, status en contactEmail moeten identiek blijven.
+      // Dit is de crowdsourced tag-functie, bewust zonder goedkeuringsstap.
+      allow update: if request.auth == null
+        && resource.data.status == 'published'
+        && request.resource.data.status == 'published'
+        && request.resource.data.afbeeldingUrl == resource.data.afbeeldingUrl
+        && request.resource.data.afbeeldingPath == resource.data.afbeeldingPath
+        && request.resource.data.contactEmail == resource.data.contactEmail
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (request.resource.data.jaar == null || request.resource.data.jaar is int)
+        && request.resource.data.locatie is string
+        && request.resource.data.locatie.size() < 200
+        && request.resource.data.ledenTags is list
+        && request.resource.data.ledenTags.size() < 30
+        && request.resource.data.verwijderReden is string
+        && request.resource.data.verwijderReden.size() < 300;
+    }
   }
 }
