@@ -160,16 +160,27 @@ function FotosBeheerContent() {
   );
 }
 
-function ThumbOfFout({ url, klein }) {
+function ThumbOfFout({ url, klein, vierkant = true }) {
   const [fout, setFout] = useState(false);
   if (fout) {
     return (
-      <div style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: klein ? 16 : 22 }}>
+      <div style={{ aspectRatio: vierkant ? '1' : undefined, minHeight: vierkant ? undefined : 140, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: klein ? 16 : 22 }}>
         🖼️
       </div>
     );
   }
-  return <img src={url} alt="" onError={() => setFout(true)} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />;
+  return (
+    <img
+      src={url}
+      alt=""
+      onError={() => setFout(true)}
+      style={
+        vierkant
+          ? { width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }
+          : { width: '100%', borderRadius: radius.input, display: 'block' }
+      }
+    />
+  );
 }
 
 function FotoBewerkKaart({ foto, onKlaar }) {
@@ -195,20 +206,36 @@ function FotoBewerkKaart({ foto, onKlaar }) {
   };
 
   return (
-    <div style={{ gridColumn: 'span 2', border: `1.5px solid ${colors.forest}`, borderRadius: radius.card, padding: 12, background: colors.paperCard, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input type="number" value={jaar} onChange={(e) => setJaar(e.target.value)} placeholder="Jaar" style={{ ...inputStyle, width: 90 }} />
-        <input type="text" value={locatie} onChange={(e) => setLocatie(e.target.value)} placeholder="Locatie" style={{ ...inputStyle, flex: 1 }} />
+    <div
+      style={{
+        gridColumn: '1 / -1',
+        border: `1.5px solid ${colors.forest}`,
+        borderRadius: radius.card,
+        padding: 16,
+        background: colors.paperCard,
+        display: 'flex',
+        gap: 18,
+        flexWrap: 'wrap',
+      }}
+    >
+      <div style={{ width: 220, flexShrink: 0 }}>
+        <ThumbOfFout url={foto.afbeeldingUrl} vierkant={false} />
       </div>
-      <textarea value={beschrijving} onChange={(e) => setBeschrijving(e.target.value)} placeholder="Extra info (optioneel)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
-      <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button onClick={opslaan} disabled={bezig} style={smallBtn(colors.forest)}>
-          {bezig ? 'Bezig…' : 'Opslaan'}
-        </button>
-        <button onClick={onKlaar} style={smallBtn(colors.inkMuted)}>
-          Annuleren
-        </button>
+      <div style={{ flex: 1, minWidth: 240, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input type="number" value={jaar} onChange={(e) => setJaar(e.target.value)} placeholder="Jaar" style={{ ...inputStyle, width: 100 }} />
+          <input type="text" value={locatie} onChange={(e) => setLocatie(e.target.value)} placeholder="Locatie" style={{ ...inputStyle, flex: 1 }} />
+        </div>
+        <textarea value={beschrijving} onChange={(e) => setBeschrijving(e.target.value)} placeholder="Extra info (optioneel)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+        <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={opslaan} disabled={bezig} style={{ ...smallBtn(colors.forest), flex: 'none', padding: '8px 18px' }}>
+            {bezig ? 'Bezig…' : 'Opslaan'}
+          </button>
+          <button onClick={onKlaar} style={{ ...smallBtn(colors.inkMuted), flex: 'none', padding: '8px 18px' }}>
+            Annuleren
+          </button>
+        </div>
       </div>
     </div>
   );
