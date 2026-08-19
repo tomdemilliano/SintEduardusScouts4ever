@@ -137,12 +137,15 @@ pages/api/extract.js      Server-route die Claude aanroept voor herkenning
 De tijdlijn (`/tijdlijn`) toont nu, naast de leden, ook:
 - **Jaarkentekens**: één afbeelding + jaarleuze per werkingsjaar (start
   september), beheerd via `/beheer/kentekens`.
-- **Mijlpalen**: belangrijke momenten uit de geschiedenis van de groep,
-  beheerd via `/beheer/mijlpalen`. Bezoekers kunnen zelf een mijlpaal
-  voorstellen via `/mijlpaal-toevoegen` (zonder in te loggen, met
-  e-mailadres + een rekensom + honeypot tegen bots). Een voorstel komt
-  binnen met status `pending` en verschijnt pas publiek nadat de
-  beheerder het goedkeurt op `/beheer/mijlpalen`.
+- **Mijlpalen**: belangrijke momenten uit de geschiedenis van de groep
+  (🚩) of van de scoutsbeweging in het algemeen (⚜️, fleur-de-lis — het
+  klassieke scoutssymbool, geen merklogo), beheerd via `/beheer/mijlpalen`.
+  Bezoekers kunnen zelf een mijlpaal voorstellen via `/mijlpaal-toevoegen`
+  (zonder in te loggen, met e-mailadres + een rekensom + honeypot tegen
+  bots, en een keuze tussen de twee soorten). Een voorstel komt binnen met
+  status `pending` en verschijnt pas publiek nadat de beheerder het
+  goedkeurt op `/beheer/mijlpalen`. Op de tijdlijn staan de twee soorten
+  in aparte rijen, zodat het onderscheid meteen duidelijk is.
 - **Custom jaren-slider**: de tijdlijn is nu vast en breed (1944 tot nu,
   22px per jaar), met een eigen gestileerde schuifbalk bovenaan in plaats
   van de browser-scrollbar. Slepen aan de schuifbalk en horizontaal
