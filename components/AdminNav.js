@@ -7,6 +7,7 @@ const SECTIES = [
   { href: '/beheer/vriendenboek', label: 'Vriendenboek', icon: '📖', match: (p) => p.startsWith('/beheer/vriendenboek') },
   { href: '/beheer/tijdlijn', label: 'Tijdlijn', icon: '⏳', match: (p) => p.startsWith('/beheer/tijdlijn') },
   { href: '/beheer/kampplaatsen', label: 'Kampplaatsen', icon: '📍', match: (p) => p.startsWith('/beheer/kampplaatsen') },
+  { href: '/beheer/fotos', label: "Foto's", icon: '📷', match: (p) => p.startsWith('/beheer/fotos') },
   { href: '/beheer/gerechten', label: 'Gerechten', icon: '🍽️', match: (p) => p.startsWith('/beheer/gerechten') },
   { href: '/beheer/links', label: 'Links', icon: '🔗', match: (p) => p.startsWith('/beheer/links') },
 ];
