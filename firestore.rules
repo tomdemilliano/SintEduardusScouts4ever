@@ -35,6 +35,29 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    match /extraLocations/{locationId} {
+      // Gepubliceerde extra kampplaatsen zijn publiek leesbaar; beheerders
+      // zien alles (ook 'pending', voor goedkeuring).
+      allow read: if resource.data.status == 'published' || request.auth != null;
+      allow write: if request.auth != null;
+
+      // Publiek voorstel (/kampplaats-toevoegen): niet-ingelogde bezoekers
+      // mogen een NIEUWE locatie aanmaken, maar altijd als 'pending', zonder
+      // coördinaten (die stelt de beheerder in bij het goedkeuren), en met
+      // beperkte veldgroottes.
+      allow create: if request.auth == null
+        && request.resource.data.status == 'pending'
+        && request.resource.data.lat == null
+        && request.resource.data.lng == null
+        && request.resource.data.naam is string
+        && request.resource.data.naam.size() > 0
+        && request.resource.data.naam.size() < 200
+        && request.resource.data.beschrijving is string
+        && request.resource.data.beschrijving.size() < 1000
+        && request.resource.data.contactEmail is string
+        && request.resource.data.contactEmail.size() < 200;
+    }
+
     match /dishes/{dishId} {
       // Receptkoppelingen mogen publiek gelezen worden (voor de klikbare gerechten).
       allow read: if true;
