@@ -11,6 +11,7 @@ export default function FotoDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [foto, setFoto] = useState(null);
+  const [alleFotos, setAlleFotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [afbeeldingFout, setAfbeeldingFout] = useState(false);
 
@@ -26,7 +27,15 @@ export default function FotoDetailPage() {
   const [verwijderVerzonden, setVerwijderVerzonden] = useState(false);
 
   useEffect(() => {
+    PhotoFactory.getPublished().then((lijst) => {
+      lijst.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setAlleFotos(lijst);
+    });
+  }, []);
+
+  useEffect(() => {
     if (!id) return;
+    setAfbeeldingFout(false);
     PhotoFactory.getById(id).then((f) => {
       const geldig = f && f.status === 'published';
       setFoto(geldig ? f : null);
@@ -39,6 +48,19 @@ export default function FotoDetailPage() {
       setLoading(false);
     });
   }, [id]);
+
+  const huidigeIndex = alleFotos.findIndex((f) => f.id === id);
+  const vorigeFoto = huidigeIndex > 0 ? alleFotos[huidigeIndex - 1] : null;
+  const volgendeFoto = huidigeIndex >= 0 && huidigeIndex < alleFotos.length - 1 ? alleFotos[huidigeIndex + 1] : null;
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowLeft' && vorigeFoto) router.push(`/fotos/${vorigeFoto.id}`);
+      if (e.key === 'ArrowRight' && volgendeFoto) router.push(`/fotos/${volgendeFoto.id}`);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [vorigeFoto, volgendeFoto, router]);
 
   const opslaan = async () => {
     setOpslaanBezig(true);
@@ -101,7 +123,7 @@ export default function FotoDetailPage() {
           ← Terug naar de foto's
         </Link>
 
-        <div style={{ background: colors.paperCard, border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden', marginBottom: 20 }}>
+        <div style={{ background: colors.paperCard, border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden', marginBottom: 12, position: 'relative' }}>
           {afbeeldingFout ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>🖼️</div>
@@ -115,7 +137,32 @@ export default function FotoDetailPage() {
           ) : (
             <img src={foto.afbeeldingUrl} alt="" onError={() => setAfbeeldingFout(true)} style={{ width: '100%', display: 'block' }} />
           )}
+
+          {vorigeFoto && (
+            <Link
+              href={`/fotos/${vorigeFoto.id}`}
+              aria-label="Vorige foto"
+              style={navPijlStyle('left')}
+            >
+              ‹
+            </Link>
+          )}
+          {volgendeFoto && (
+            <Link
+              href={`/fotos/${volgendeFoto.id}`}
+              aria-label="Volgende foto"
+              style={navPijlStyle('right')}
+            >
+              ›
+            </Link>
+          )}
         </div>
+
+        {alleFotos.length > 0 && huidigeIndex >= 0 && (
+          <p style={{ textAlign: 'center', fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, margin: '0 0 20px' }}>
+            Foto {huidigeIndex + 1} van {alleFotos.length}
+          </p>
+        )}
 
         {verwijderVerzonden ? (
           <div style={{ background: colors.campfireLight, border: `1.5px solid ${colors.campfire}`, borderRadius: radius.card, padding: '16px 18px', marginBottom: 20 }}>
@@ -259,3 +306,23 @@ const inputStyle = {
   color: colors.ink,
   boxSizing: 'border-box',
 };
+
+function navPijlStyle(kant) {
+  return {
+    position: 'absolute',
+    top: '50%',
+    [kant]: 10,
+    transform: 'translateY(-50%)',
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    background: 'rgba(44, 36, 25, 0.55)',
+    color: colors.white,
+    fontSize: 24,
+    lineHeight: '40px',
+    textAlign: 'center',
+    textDecoration: 'none',
+    fontFamily: fonts.body,
+    fontWeight: 700,
+  };
+}
