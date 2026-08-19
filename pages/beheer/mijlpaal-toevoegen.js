@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { MijlpaalFactory } from '../lib/dbSchema';
-import { colors, fonts, fontImports, radius } from '../lib/theme';
-import PublicNav from '../components/PublicNav';
+import { MijlpaalFactory } from '../../lib/dbSchema';
+import { colors, fonts, fontImports, radius } from '../../lib/theme';
+import PublicNav from '../../components/PublicNav';
 
 function nieuweSom() {
   const a = 1 + Math.floor(Math.random() * 9);
