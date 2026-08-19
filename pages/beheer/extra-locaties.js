@@ -97,12 +97,23 @@ function ExtraLocatiesContent() {
                         Ingestuurd door: {loc.contactEmail}
                       </div>
                     )}
-                    <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.stamp, marginTop: 4 }}>
-                      ⚠ Nog geen coördinaten — zet de locatie op de kaart voor je goedkeurt.
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                      <button onClick={() => setBewerkId(loc.id)} style={btn(colors.forest)}>
-                        Coördinaten instellen &amp; bewerken
+                    {loc.lat != null ? (
+                      <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.forest, marginTop: 4 }}>
+                        📍 Bezoeker koos al een locatie: {loc.lat.toFixed(3)}, {loc.lng.toFixed(3)}
+                      </div>
+                    ) : (
+                      <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.stamp, marginTop: 4 }}>
+                        ⚠ Nog geen coördinaten — zet de locatie op de kaart voor je goedkeurt.
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                      {loc.lat != null && (
+                        <button onClick={() => handleGoedkeuren(loc)} style={btn(colors.forest)}>
+                          Goedkeuren
+                        </button>
+                      )}
+                      <button onClick={() => setBewerkId(loc.id)} style={btn(colors.inkMuted)}>
+                        {loc.lat != null ? 'Bewerken' : 'Coördinaten instellen & bewerken'}
                       </button>
                       <button onClick={() => handleVerwijderen(loc)} style={btn(colors.stamp)}>
                         Afwijzen
