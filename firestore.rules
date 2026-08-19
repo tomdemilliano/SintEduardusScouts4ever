@@ -70,6 +70,7 @@ service cloud.firestore {
         && request.resource.data.jaar is int
         && request.resource.data.jaar > 1900
         && request.resource.data.jaar < 2200
+        && request.resource.data.type in ['scouting', 'groep']
         && request.resource.data.titel is string
         && request.resource.data.titel.size() < 200
         && request.resource.data.beschrijving is string
