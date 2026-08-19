@@ -122,9 +122,11 @@ zonder stem-telling:
   op kaart aanklikken, zelfde manier als bij `/beheer/locaties`).
 - **Bezoeker**: `/kampplaats-toevoegen` — naam, beschrijving en verplicht
   e-mailadres, met dezelfde rekensom + honeypot-beveiliging als bij de
-  andere publieke formulieren. Komt binnen als `pending`, zonder
-  coördinaten (die stelt de beheerder in bij het goedkeuren), en wordt pas
-  publiek zichtbaar na goedkeuring.
+  andere publieke formulieren. De ingevulde naam dient meteen als
+  zoekfilter voor een kaart (OpenStreetMap/Nominatim), zodat de bezoeker
+  zelf al de juiste plek kan aanklikken. Komt binnen als `pending` — met
+  of zonder coördinaten — en wordt pas publiek zichtbaar na goedkeuring
+  door de beheerder.
 
 Op `/kampplaatsen` staan beide soorten duidelijk gescheiden: de "leukste"
 lijst met ❤️-tellingen bovenaan, en een aparte "extra getipte plekken"-lijst
