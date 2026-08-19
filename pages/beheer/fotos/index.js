@@ -175,13 +175,19 @@ function ThumbOfFout({ url, klein }) {
 function FotoBewerkKaart({ foto, onKlaar }) {
   const [jaar, setJaar] = useState(foto.jaar ? String(foto.jaar) : '');
   const [locatie, setLocatie] = useState(foto.locatie || '');
+  const [beschrijving, setBeschrijving] = useState(foto.beschrijving || '');
   const [ledenTags, setLedenTags] = useState(foto.ledenTags || []);
   const [bezig, setBezig] = useState(false);
 
   const opslaan = async () => {
     setBezig(true);
     try {
-      await PhotoFactory.updateTags(foto.id, { jaar: jaar ? parseInt(jaar, 10) : null, locatie: locatie.trim(), ledenTags });
+      await PhotoFactory.updateTags(foto.id, {
+        jaar: jaar ? parseInt(jaar, 10) : null,
+        locatie: locatie.trim(),
+        beschrijving: beschrijving.trim(),
+        ledenTags,
+      });
       onKlaar();
     } finally {
       setBezig(false);
@@ -194,6 +200,7 @@ function FotoBewerkKaart({ foto, onKlaar }) {
         <input type="number" value={jaar} onChange={(e) => setJaar(e.target.value)} placeholder="Jaar" style={{ ...inputStyle, width: 90 }} />
         <input type="text" value={locatie} onChange={(e) => setLocatie(e.target.value)} placeholder="Locatie" style={{ ...inputStyle, flex: 1 }} />
       </div>
+      <textarea value={beschrijving} onChange={(e) => setBeschrijving(e.target.value)} placeholder="Extra info (optioneel)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
       <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
       <div style={{ display: 'flex', gap: 6 }}>
         <button onClick={opslaan} disabled={bezig} style={smallBtn(colors.forest)}>
