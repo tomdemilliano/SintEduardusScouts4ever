@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { watchAuth, logout } from '../lib/auth';
 import { colors, fonts } from '../lib/theme';
+import AdminNav from './AdminNav';
 
 export default function RequireAuth({ children }) {
   const router = useRouter();
@@ -31,21 +32,22 @@ export default function RequireAuth({ children }) {
 
   return (
     <>
-      <div style={{ background: colors.forestDark, padding: '8px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ background: colors.forestDark, padding: '6px 20px', display: 'flex', justifyContent: 'flex-end' }}>
         <button
           onClick={() => logout()}
           style={{
             background: 'none',
             border: 'none',
-            color: colors.paper,
+            color: 'rgba(255,255,255,0.65)',
             fontFamily: fonts.body,
-            fontSize: 12,
+            fontSize: 11,
             cursor: 'pointer',
           }}
         >
           Uitloggen
         </button>
       </div>
+      <AdminNav />
       {children}
     </>
   );
