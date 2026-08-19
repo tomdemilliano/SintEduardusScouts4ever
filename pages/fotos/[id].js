@@ -16,6 +16,7 @@ export default function FotoDetailPage() {
 
   const [jaar, setJaar] = useState('');
   const [locatie, setLocatie] = useState('');
+  const [beschrijving, setBeschrijving] = useState('');
   const [ledenTags, setLedenTags] = useState([]);
   const [opslaanBezig, setOpslaanBezig] = useState(false);
   const [opgeslagen, setOpgeslagen] = useState(false);
@@ -32,6 +33,7 @@ export default function FotoDetailPage() {
       if (geldig) {
         setJaar(f.jaar ? String(f.jaar) : '');
         setLocatie(f.locatie || '');
+        setBeschrijving(f.beschrijving || '');
         setLedenTags(f.ledenTags || []);
       }
       setLoading(false);
@@ -44,6 +46,7 @@ export default function FotoDetailPage() {
       await PhotoFactory.updateTags(id, {
         jaar: jaar ? parseInt(jaar, 10) : null,
         locatie: locatie.trim(),
+        beschrijving: beschrijving.trim(),
         ledenTags,
       });
       setOpgeslagen(true);
@@ -146,6 +149,16 @@ export default function FotoDetailPage() {
               <div>
                 <Label>Wie staat erop?</Label>
                 <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
+              </div>
+              <div>
+                <Label>Extra info (optioneel)</Label>
+                <textarea
+                  value={beschrijving}
+                  onChange={(e) => setBeschrijving(e.target.value)}
+                  placeholder="bv. wat er op de foto te zien is, een leuke anekdote…"
+                  rows={3}
+                  style={{ ...inputStyle, resize: 'vertical' }}
+                />
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
