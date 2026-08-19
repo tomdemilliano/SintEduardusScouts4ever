@@ -39,11 +39,8 @@ function GerechtenContent() {
         <title>Gerechten &amp; recepten — Beheer</title>
       </Head>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 20px 80px' }}>
-        <a href="/beheer" style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, textDecoration: 'none' }}>
-          ← Terug naar overzicht
-        </a>
-        <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: '12px 0 6px' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 20px 80px' }}>
+        <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: '0 0 6px' }}>
           Gerechten &amp; recepten
         </h1>
         <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 28 }}>
