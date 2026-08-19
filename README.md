@@ -108,13 +108,35 @@ op via de ingebouwde zoekfunctie (gebruikt OpenStreetMap/Nominatim, geen
 API-key nodig) en kies het juiste resultaat. Plaatsen die je niet koppelt
 verschijnen gewoon niet op de kaart, maar wel in de tekstlijst.
 
-## Nieuwe Firestore-collectie
+## Extra kampplaatsen (los van de "likes")
 
-Naast `entries` is er nu ook een `locations`-collectie
-(kampplaats-naam → lat/lng), publiek leesbaar, enkel beheerders kunnen
-schrijven. Zit al verwerkt in `firestore.rules`.
+Belangrijk onderscheid: de kampplaatsen die uit de vriendenboekje-formulieren
+komen (`besteKampplaats`) blijven de "leukste" kampplaatsen — die tellingen
+zijn eigenlijk likes/stemmen, en dat blijft zo op `/kampplaatsen` (❤️-icoon,
+kampvuur-oranje pins).
 
+Daarnaast is er nu een volledig los systeem voor **extra kampplaatsen**,
+zonder stem-telling:
+- **Beheerder**: `/beheer/extra-locaties` — direct toevoegen (meteen
+  gepubliceerd) met naam, beschrijving en optioneel coördinaten (zoeken of
+  op kaart aanklikken, zelfde manier als bij `/beheer/locaties`).
+- **Bezoeker**: `/kampplaats-toevoegen` — naam, beschrijving en verplicht
+  e-mailadres, met dezelfde rekensom + honeypot-beveiliging als bij de
+  andere publieke formulieren. Komt binnen als `pending`, zonder
+  coördinaten (die stelt de beheerder in bij het goedkeuren), en wordt pas
+  publiek zichtbaar na goedkeuring.
 
+Op `/kampplaatsen` staan beide soorten duidelijk gescheiden: de "leukste"
+lijst met ❤️-tellingen bovenaan, en een aparte "extra getipte plekken"-lijst
+eronder, met een legende bij de kaart die de kleuren uitlegt.
+
+Nieuwe Firestore-collectie: `extraLocations` (zie `firestore.rules`).
+
+## Nieuwe Firestore-collectie (kampplaatsen op de kaart)
+
+Naast `entries` is er ook een `locations`-collectie (kampplaats-naam →
+lat/lng, voor de "leukste kampplaatsen"-koppeling), publiek leesbaar, enkel
+beheerders kunnen schrijven. Zit al verwerkt in `firestore.rules`.
 
 ```
 lib/firebase.js       Firebase client init
