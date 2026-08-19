@@ -1,255 +1,300 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
-import { MijlpaalFactory } from '../../lib/dbSchema';
-import { colors, fonts, fontImports, radius } from '../../lib/theme';
-import RequireAuth from '../../components/RequireAuth';
+import Link from 'next/link';
+import { MijlpaalFactory } from '../lib/dbSchema';
+import { colors, fonts, fontImports, radius } from '../lib/theme';
+import PublicNav from '../components/PublicNav';
 
-export default function MijlpalenPage() {
-  return (
-    <RequireAuth>
-      <MijlpalenContent />
-    </RequireAuth>
-  );
+function nieuweSom() {
+  const a = 1 + Math.floor(Math.random() * 9);
+  const b = 1 + Math.floor(Math.random() * 9);
+  return { a, b };
 }
 
-const leegNieuw = { jaar: '', titel: '', beschrijving: '' };
-
-function MijlpalenContent() {
-  const [mijlpalen, setMijlpalen] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [nieuw, setNieuw] = useState(leegNieuw);
-  const [nieuwBestand, setNieuwBestand] = useState(null);
-  const [toevoegBezig, setToevoegBezig] = useState(false);
+export default function MijlpaalToevoegenPage() {
+  const [jaar, setJaar] = useState('');
+  const [titel, setTitel] = useState('');
+  const [beschrijving, setBeschrijving] = useState('');
+  const [type, setType] = useState('groep');
+  const [email, setEmail] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  const [som, setSom] = useState(() => nieuweSom());
+  const [somAntwoord, setSomAntwoord] = useState('');
+  const [versturen, setVersturen] = useState(false);
   const [foutmelding, setFoutmelding] = useState(null);
+  const [verzonden, setVerzonden] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    setMijlpalen(await MijlpaalFactory.getAllAdmin());
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const handleToevoegen = async () => {
+  const handleVerstuur = async () => {
     setFoutmelding(null);
-    const jaarNum = parseInt(nieuw.jaar, 10);
-    if (!jaarNum || !nieuw.titel.trim()) {
-      setFoutmelding('Jaar en titel zijn verplicht.');
+
+    const jaarNum = parseInt(jaar, 10);
+    if (!jaarNum || jaarNum < 1900 || jaarNum > 2200) {
+      setFoutmelding('Vul een geldig jaartal in.');
       return;
     }
-    setToevoegBezig(true);
+    if (!titel.trim()) {
+      setFoutmelding('Vul een titel in.');
+      return;
+    }
+    if (!email.trim() || !email.includes('@')) {
+      setFoutmelding('Vul een geldig e-mailadres in.');
+      return;
+    }
+    if (parseInt(somAntwoord, 10) !== som.a + som.b) {
+      setFoutmelding('Dat is niet het juiste antwoord op de rekensom — probeer opnieuw.');
+      setSom(nieuweSom());
+      setSomAntwoord('');
+      return;
+    }
+
+    if (honeypot.trim()) {
+      // waarschijnlijk een bot — doe alsof het gelukt is, sla niets op
+      setVerzonden(true);
+      return;
+    }
+
+    setVersturen(true);
     try {
-      await MijlpaalFactory.createByAdmin({
+      await MijlpaalFactory.createPublic({
         jaar: jaarNum,
-        titel: nieuw.titel.trim(),
-        beschrijving: nieuw.beschrijving.trim(),
-        file: nieuwBestand,
+        titel: titel.trim(),
+        beschrijving: beschrijving.trim(),
+        type,
+        contactEmail: email.trim(),
       });
-      setNieuw(leegNieuw);
-      setNieuwBestand(null);
-      load();
+      setVerzonden(true);
     } catch (err) {
-      setFoutmelding('Opslaan mislukt, probeer opnieuw.');
+      setFoutmelding('Er ging iets mis bij het versturen. Probeer het straks nog eens.');
     } finally {
-      setToevoegBezig(false);
+      setVersturen(false);
     }
   };
 
-  const handleGoedkeuren = async (m) => {
-    await MijlpaalFactory.approve(m.id);
-    load();
-  };
-
-  const handleVerwijderen = async (m) => {
-    if (!confirm(`Mijlpaal "${m.titel}" verwijderen?`)) return;
-    await MijlpaalFactory.remove(m.id, m.afbeeldingPath);
-    load();
-  };
-
-  const pending = mijlpalen.filter((m) => m.status === 'pending');
-  const gepubliceerd = mijlpalen.filter((m) => m.status === 'published');
+  if (verzonden) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'transparent' }}>
+        <Head>
+          <link rel="stylesheet" href={fontImports} />
+          <title>Bedankt! — Vrienden van Sint-Eduardusscouts</title>
+        </Head>
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '0 20px 100px' }}>
+          <PublicNav />
+          <div
+            style={{
+              marginTop: 40,
+              textAlign: 'center',
+              background: colors.paperCard,
+              border: `1px solid ${colors.line}`,
+              borderRadius: radius.card,
+              padding: '40px 32px',
+            }}
+          >
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🚩</div>
+            <h1 style={{ fontFamily: fonts.display, fontSize: 26, fontWeight: 700, color: colors.ink, margin: '0 0 10px' }}>
+              Bedankt!
+            </h1>
+            <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, lineHeight: 1.5 }}>
+              Je mijlpaal is verstuurd. De beheerder kijkt 'm nog even na voor
+              hij op de tijdlijn verschijnt — dat kan soms wel eventjes duren.
+            </p>
+            <Link
+              href="/tijdlijn"
+              style={{
+                display: 'inline-block',
+                marginTop: 20,
+                padding: '10px 22px',
+                borderRadius: radius.badge,
+                background: colors.forest,
+                color: colors.white,
+                fontFamily: fonts.body,
+                fontWeight: 600,
+                fontSize: 13,
+                textDecoration: 'none',
+              }}
+            >
+              Terug naar de tijdlijn
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
         <link rel="stylesheet" href={fontImports} />
-        <title>Mijlpalen — Beheer</title>
+        <title>Mijlpaal voorstellen — Vrienden van Sint-Eduardusscouts</title>
       </Head>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 20px 80px' }}>
-        <a href="/beheer" style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, textDecoration: 'none' }}>
-          ← Terug naar overzicht
-        </a>
-        <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: '12px 0 6px' }}>
-          Mijlpalen
-        </h1>
-        <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 28 }}>
-          Belangrijke momenten uit de geschiedenis van de groep, te zien op de tijdlijn.
-        </p>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 20px 100px' }}>
+        <PublicNav />
 
-        {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
+        <div style={{ textAlign: 'center', margin: '28px 0 32px' }}>
+          <h1 style={{ fontFamily: fonts.display, fontSize: 34, fontWeight: 700, color: colors.ink, margin: '0 0 8px' }}>
+            Stel een mijlpaal voor
+          </h1>
+          <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, maxWidth: 440, margin: '0 auto' }}>
+            Ken je een belangrijk moment uit de geschiedenis van de groep dat
+            nog niet op de tijdlijn staat? Vul het hieronder aan. De beheerder
+            kijkt het na voor het gepubliceerd wordt.
+          </p>
+        </div>
 
-        {/* Nog goed te keuren */}
-        {pending.length > 0 && (
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.campfire, marginBottom: 10 }}>
-              Nog goed te keuren ({pending.length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {pending.map((m) => (
-                <div
-                  key={m.id}
-                  style={{
-                    background: colors.campfireLight,
-                    border: `1.5px dashed ${colors.campfire}`,
-                    borderRadius: radius.card,
-                    padding: '14px 18px',
-                  }}
-                >
-                  <div style={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 600, color: colors.ink }}>
-                    {m.jaar} — {m.titel}
-                  </div>
-                  {m.beschrijving && (
-                    <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink, margin: '6px 0' }}>
-                      {m.beschrijving}
-                    </p>
-                  )}
-                  {m.contactEmail && (
-                    <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted }}>
-                      Ingestuurd door: {m.contactEmail}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                    <button onClick={() => handleGoedkeuren(m)} style={btn(colors.forest)}>
-                      Goedkeuren
-                    </button>
-                    <button onClick={() => handleVerwijderen(m)} style={btn(colors.stamp)}>
-                      Afwijzen
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Nieuwe mijlpaal toevoegen */}
         <div
           style={{
             background: colors.paperCard,
-            border: `1.5px dashed ${colors.line}`,
+            border: `1px solid ${colors.line}`,
             borderRadius: radius.card,
-            padding: '18px 20px',
-            marginBottom: 28,
+            padding: '28px 24px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 16,
           }}
         >
-          <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.inkMuted }}>
-            Mijlpaal toevoegen
+          <div>
+            <Label>Soort mijlpaal</Label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setType('groep')}
+                style={typeBtn(type === 'groep')}
+              >
+                🚩 Iets van onze groep
+              </button>
+              <button
+                type="button"
+                onClick={() => setType('scouting')}
+                style={typeBtn(type === 'scouting')}
+              >
+                ⚜️ Iets uit de scoutsbeweging
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <div>
-              <label style={labelStyle}>Jaar</label>
-              <input
-                type="number"
-                value={nieuw.jaar}
-                onChange={(e) => setNieuw((p) => ({ ...p, jaar: e.target.value }))}
-                placeholder="1944"
-                style={{ ...inputStyle, width: 100 }}
-              />
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ width: 110 }}>
+              <Label>Jaar</Label>
+              <input type="number" value={jaar} onChange={(e) => setJaar(e.target.value)} placeholder="1944" style={inputStyle} />
             </div>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <label style={labelStyle}>Titel</label>
+              <Label>Titel</Label>
               <input
                 type="text"
-                value={nieuw.titel}
-                onChange={(e) => setNieuw((p) => ({ ...p, titel: e.target.value }))}
+                value={titel}
+                onChange={(e) => setTitel(e.target.value)}
                 placeholder="bv. Oprichting van de groep"
                 style={inputStyle}
               />
             </div>
           </div>
+
           <div>
-            <label style={labelStyle}>Beschrijving (optioneel)</label>
+            <Label>Beschrijving (optioneel)</Label>
             <textarea
-              value={nieuw.beschrijving}
-              onChange={(e) => setNieuw((p) => ({ ...p, beschrijving: e.target.value }))}
-              rows={2}
+              value={beschrijving}
+              onChange={(e) => setBeschrijving(e.target.value)}
+              rows={3}
               style={{ ...inputStyle, resize: 'vertical' }}
             />
           </div>
-          <label style={{ ...labelStyle, cursor: 'pointer' }}>
-            Afbeelding (optioneel)
+
+          <div>
+            <Label>Je e-mailadres</Label>
             <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setNieuwBestand(e.target.files?.[0] || null)}
-              style={{ display: 'block', marginTop: 6, fontFamily: fonts.body, fontSize: 13 }}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jouw@email.be"
+              style={inputStyle}
             />
-          </label>
+            <p style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, marginTop: 4 }}>
+              Enkel zichtbaar voor de beheerder, voor eventuele vragen — niet publiek.
+            </p>
+          </div>
+
+          {/* Honeypot: onzichtbaar voor mensen, wordt vaak automatisch ingevuld door bots */}
+          <div
+            aria-hidden="true"
+            style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}
+          >
+            <label htmlFor="website2">Laat dit veld leeg</label>
+            <input
+              id="website2"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+            />
+          </div>
+
+          <div style={{ border: `1px dashed ${colors.line}`, borderRadius: radius.card, padding: '14px 16px' }}>
+            <Label>Even controleren dat je geen robot bent</Label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink }}>
+                Hoeveel is {som.a} + {som.b}?
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={somAntwoord}
+                onChange={(e) => setSomAntwoord(e.target.value)}
+                style={{ ...inputStyle, width: 70 }}
+              />
+            </div>
+          </div>
+
           {foutmelding && (
             <div style={{ color: colors.stamp, fontFamily: fonts.body, fontSize: 13 }}>{foutmelding}</div>
           )}
-          <button onClick={handleToevoegen} disabled={toevoegBezig} style={btn(colors.forest)}>
-            {toevoegBezig ? 'Bezig…' : '+ Mijlpaal toevoegen'}
+
+          <button
+            onClick={handleVerstuur}
+            disabled={versturen}
+            style={{
+              alignSelf: 'flex-start',
+              padding: '12px 24px',
+              borderRadius: radius.badge,
+              border: 'none',
+              background: versturen ? colors.inkMuted : colors.forest,
+              color: colors.white,
+              fontFamily: fonts.body,
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: versturen ? 'default' : 'pointer',
+            }}
+          >
+            {versturen ? 'Bezig met versturen…' : 'Versturen'}
           </button>
         </div>
-
-        {/* Alle gepubliceerde mijlpalen */}
-        <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.inkMuted, marginBottom: 10 }}>
-          Gepubliceerd ({gepubliceerd.length})
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {gepubliceerd.map((m) => (
-            <div
-              key={m.id}
-              style={{
-                background: colors.paperCard,
-                border: `1px solid ${colors.line}`,
-                borderRadius: radius.card,
-                padding: '12px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-              }}
-            >
-              {m.afbeeldingUrl && (
-                <img
-                  src={m.afbeeldingUrl}
-                  alt=""
-                  style={{ width: 40, height: 40, borderRadius: radius.input, objectFit: 'cover', flexShrink: 0 }}
-                />
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: fonts.display, fontSize: 15, fontWeight: 600, color: colors.ink }}>
-                  {m.jaar} — {m.titel}
-                </div>
-                {m.beschrijving && (
-                  <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>{m.beschrijving}</div>
-                )}
-              </div>
-              <button onClick={() => handleVerwijderen(m)} style={btn(colors.stamp)}>
-                Verwijderen
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {!loading && gepubliceerd.length === 0 && (
-          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Nog geen mijlpalen gepubliceerd.</p>
-        )}
       </div>
     </div>
   );
 }
 
+function Label({ children }) {
+  return (
+    <label
+      style={{
+        display: 'block',
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 600,
+        color: colors.inkMuted,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        marginBottom: 4,
+      }}
+    >
+      {children}
+    </label>
+  );
+}
+
 const inputStyle = {
   width: '100%',
-  padding: '9px 12px',
+  padding: '10px 12px',
   borderRadius: radius.input,
   border: `1px solid ${colors.line}`,
   background: colors.white,
@@ -259,26 +304,16 @@ const inputStyle = {
   boxSizing: 'border-box',
 };
 
-const labelStyle = {
-  display: 'block',
-  fontFamily: fonts.body,
-  fontSize: 11,
-  fontWeight: 600,
-  color: colors.inkMuted,
-  marginBottom: 3,
-};
-
-function btn(color) {
+function typeBtn(actief) {
   return {
-    padding: '8px 16px',
+    padding: '8px 14px',
     borderRadius: 999,
-    border: 'none',
-    background: color,
-    color: '#FFF',
+    border: `1.5px solid ${actief ? colors.forest : colors.line}`,
+    background: actief ? colors.forest : colors.white,
+    color: actief ? colors.white : colors.ink,
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
-    whiteSpace: 'nowrap',
   };
 }
