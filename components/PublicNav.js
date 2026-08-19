@@ -6,6 +6,7 @@ const LINKS = [
   { href: '/vriendenboekje', label: 'Vriendenboekje', icon: '📖' },
   { href: '/tijdlijn', label: 'Tijdlijn', icon: '⏳' },
   { href: '/kampplaatsen', label: 'Kampplaatsen', icon: '🏕️' },
+  { href: '/fotos', label: "Foto's", icon: '📷' },
   { href: '/eten', label: 'Eten', icon: '🍲' },
   { href: '/spellen', label: 'Spellen', icon: '🎲' },
   { href: '/links', label: 'Links', icon: '🔗' },
