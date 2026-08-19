@@ -1,0 +1,242 @@
+import { useEffect, useState } from 'react';
+import Head from 'next/head';
+import { PhotoFactory } from '../../../lib/dbSchema';
+import { colors, fonts, fontImports, radius } from '../../../lib/theme';
+import RequireAuth from '../../../components/RequireAuth';
+import AdminSubNav from '../../../components/AdminSubNav';
+import MemberTagPicker from '../../../components/MemberTagPicker';
+
+const TABS = [
+  { href: '/beheer/fotos', label: 'Overzicht', exact: true },
+  { href: '/beheer/fotos/toevoegen', label: '+ Foto\'s toevoegen' },
+];
+
+export default function FotosBeheerPage() {
+  return (
+    <RequireAuth>
+      <FotosBeheerContent />
+    </RequireAuth>
+  );
+}
+
+function FotosBeheerContent() {
+  const [fotos, setFotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [bewerkId, setBewerkId] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    setFotos(await PhotoFactory.getAllAdmin());
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleGoedkeuren = async (foto) => {
+    await PhotoFactory.approve(foto.id);
+    load();
+  };
+
+  const handleVerwijderen = async (foto) => {
+    if (!confirm('Deze foto definitief verwijderen?')) return;
+    await PhotoFactory.remove(foto.id, foto.afbeeldingPath);
+    load();
+  };
+
+  const handleAnnuleerVerwijderverzoek = async (foto) => {
+    await PhotoFactory.cancelDeleteRequest(foto.id);
+    load();
+  };
+
+  const pending = fotos.filter((f) => f.status === 'pending');
+  const verwijderVerzoeken = fotos.filter((f) => f.status === 'published' && f.verwijderVerzoek);
+  const gepubliceerd = fotos.filter((f) => f.status === 'published' && !f.verwijderVerzoek);
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Head>
+        <link rel="stylesheet" href={fontImports} />
+        <title>Foto's — Beheer</title>
+      </Head>
+
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 20px 80px' }}>
+        <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 600, color: colors.ink, margin: '0 0 20px' }}>
+          Foto's
+        </h1>
+
+        <AdminSubNav tabs={TABS} />
+
+        {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
+
+        {/* Nog goed te keuren */}
+        {pending.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <SectieTitel kleur={colors.campfire}>Nog goed te keuren ({pending.length})</SectieTitel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+              {pending.map((foto) => (
+                <div key={foto.id} style={{ border: `1.5px dashed ${colors.campfire}`, borderRadius: radius.card, overflow: 'hidden', background: colors.campfireLight }}>
+                  <ThumbOfFout url={foto.afbeeldingUrl} />
+                  {foto.contactEmail && (
+                    <div style={{ padding: '6px 8px', fontFamily: fonts.body, fontSize: 10, color: colors.inkMuted }}>
+                      {foto.contactEmail}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 4, padding: '0 8px 8px' }}>
+                    <button onClick={() => handleGoedkeuren(foto)} style={smallBtn(colors.forest)}>
+                      Goedkeuren
+                    </button>
+                    <button onClick={() => handleVerwijderen(foto)} style={smallBtn(colors.stamp)}>
+                      Afwijzen
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Verwijderverzoeken */}
+        {verwijderVerzoeken.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <SectieTitel kleur={colors.stamp}>Verwijderverzoeken ({verwijderVerzoeken.length})</SectieTitel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {verwijderVerzoeken.map((foto) => (
+                <div key={foto.id} style={{ display: 'flex', gap: 12, alignItems: 'center', border: `1.5px dashed ${colors.stamp}`, borderRadius: radius.card, padding: 10, background: colors.paperCard }}>
+                  <div style={{ width: 60, height: 60, flexShrink: 0 }}>
+                    <ThumbOfFout url={foto.afbeeldingUrl} klein />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {foto.verwijderReden && (
+                      <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.ink }}>"{foto.verwijderReden}"</div>
+                    )}
+                  </div>
+                  <button onClick={() => handleVerwijderen(foto)} style={smallBtn(colors.stamp)}>
+                    Verwijderen
+                  </button>
+                  <button onClick={() => handleAnnuleerVerwijderverzoek(foto)} style={smallBtn(colors.inkMuted)}>
+                    Behouden
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Gepubliceerd */}
+        <SectieTitel>Gepubliceerd ({gepubliceerd.length})</SectieTitel>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+          {gepubliceerd.map((foto) =>
+            bewerkId === foto.id ? (
+              <FotoBewerkKaart key={foto.id} foto={foto} onKlaar={() => { setBewerkId(null); load(); }} />
+            ) : (
+              <div key={foto.id} style={{ border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden', background: colors.paperCard }}>
+                <ThumbOfFout url={foto.afbeeldingUrl} />
+                <div style={{ padding: '6px 8px', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, minHeight: 16 }}>
+                  {[foto.jaar, foto.locatie].filter(Boolean).join(' · ')}
+                  {foto.ledenTags?.length > 0 && (
+                    <div style={{ marginTop: 2 }}>{foto.ledenTags.map((t) => t.naam).join(', ')}</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 4, padding: '0 8px 8px' }}>
+                  <button onClick={() => setBewerkId(foto.id)} style={smallBtn(colors.inkMuted)}>
+                    Bewerken
+                  </button>
+                  <button onClick={() => handleVerwijderen(foto)} style={smallBtn(colors.stamp)}>
+                    Verwijderen
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+
+        {!loading && gepubliceerd.length === 0 && (
+          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Nog geen foto's gepubliceerd.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ThumbOfFout({ url, klein }) {
+  const [fout, setFout] = useState(false);
+  if (fout) {
+    return (
+      <div style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: klein ? 16 : 22 }}>
+        🖼️
+      </div>
+    );
+  }
+  return <img src={url} alt="" onError={() => setFout(true)} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />;
+}
+
+function FotoBewerkKaart({ foto, onKlaar }) {
+  const [jaar, setJaar] = useState(foto.jaar ? String(foto.jaar) : '');
+  const [locatie, setLocatie] = useState(foto.locatie || '');
+  const [ledenTags, setLedenTags] = useState(foto.ledenTags || []);
+  const [bezig, setBezig] = useState(false);
+
+  const opslaan = async () => {
+    setBezig(true);
+    try {
+      await PhotoFactory.updateTags(foto.id, { jaar: jaar ? parseInt(jaar, 10) : null, locatie: locatie.trim(), ledenTags });
+      onKlaar();
+    } finally {
+      setBezig(false);
+    }
+  };
+
+  return (
+    <div style={{ gridColumn: 'span 2', border: `1.5px solid ${colors.forest}`, borderRadius: radius.card, padding: 12, background: colors.paperCard, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input type="number" value={jaar} onChange={(e) => setJaar(e.target.value)} placeholder="Jaar" style={{ ...inputStyle, width: 90 }} />
+        <input type="text" value={locatie} onChange={(e) => setLocatie(e.target.value)} placeholder="Locatie" style={{ ...inputStyle, flex: 1 }} />
+      </div>
+      <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button onClick={opslaan} disabled={bezig} style={smallBtn(colors.forest)}>
+          {bezig ? 'Bezig…' : 'Opslaan'}
+        </button>
+        <button onClick={onKlaar} style={smallBtn(colors.inkMuted)}>
+          Annuleren
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SectieTitel({ children, kleur }) {
+  return (
+    <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: kleur || colors.inkMuted, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle = {
+  padding: '7px 10px',
+  borderRadius: radius.input,
+  border: `1px solid ${colors.line}`,
+  background: colors.white,
+  fontFamily: fonts.body,
+  fontSize: 13,
+  color: colors.ink,
+  boxSizing: 'border-box',
+};
+
+function smallBtn(color) {
+  return {
+    padding: '5px 10px',
+    borderRadius: 999,
+    border: 'none',
+    background: color,
+    color: '#FFF',
+    fontFamily: fonts.body,
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    flex: 1,
+  };
+}
