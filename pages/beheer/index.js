@@ -8,6 +8,7 @@ import {
   MijlpaalFactory,
   KentekenFactory,
   LinkFactory,
+  PhotoFactory,
 } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import { toTextArray, huidigWerkingsjaarStart } from '../../lib/utils';
@@ -34,7 +35,8 @@ function DashboardContent() {
       MijlpaalFactory.getAllAdmin(),
       KentekenFactory.getAll(),
       LinkFactory.getAll(),
-    ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links]) => {
+      PhotoFactory.getAllAdmin(),
+    ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links, fotos]) => {
       const gepubliceerdeEntries = entries.filter((e) => e.status === 'published');
       const conceptEntries = entries.filter((e) => e.status !== 'published');
 
@@ -52,6 +54,10 @@ function DashboardContent() {
       const huidigJaar = huidigWerkingsjaarStart();
       const heeftHuidigKenteken = kentekens.some((k) => k.startJaar === huidigJaar);
 
+      const fotosPending = fotos.filter((f) => f.status === 'pending');
+      const fotosVerwijderVerzoek = fotos.filter((f) => f.status === 'published' && f.verwijderVerzoek);
+      const fotosGepubliceerd = fotos.filter((f) => f.status === 'published');
+
       setStats({
         entriesTotaal: entries.length,
         entriesGepubliceerd: gepubliceerdeEntries.length,
@@ -61,6 +67,7 @@ function DashboardContent() {
         mijlpalenGepubliceerd: mijlpalenGepubliceerd.length,
         kentekens: kentekens.length,
         links: links.length,
+        fotosGepubliceerd: fotosGepubliceerd.length,
       });
 
       const lijst = [];
@@ -97,6 +104,20 @@ function DashboardContent() {
           href: '/beheer/tijdlijn/kentekens',
           label: `Nog geen jaarkenteken voor het huidige werkingsjaar (${huidigJaar}–${huidigJaar + 1})`,
           icon: '🧭',
+        });
+      }
+      if (fotosPending.length > 0) {
+        lijst.push({
+          href: '/beheer/fotos',
+          label: `${fotosPending.length} foto${fotosPending.length === 1 ? '' : "'s"} wachten op goedkeuring`,
+          icon: '📷',
+        });
+      }
+      if (fotosVerwijderVerzoek.length > 0) {
+        lijst.push({
+          href: '/beheer/fotos',
+          label: `${fotosVerwijderVerzoek.length} verwijderverzoek${fotosVerwijderVerzoek.length === 1 ? '' : 'en'} voor foto's`,
+          icon: '🗑️',
         });
       }
       setTodos(lijst);
@@ -183,6 +204,7 @@ function DashboardContent() {
                 <StatKaart label="Extra kampplaatsen" waarde={stats.extraLocatiesGepubliceerd} icon="📍" href="/beheer/kampplaatsen/extra" />
                 <StatKaart label="Mijlpalen gepubliceerd" waarde={stats.mijlpalenGepubliceerd} icon="🚩" href="/beheer/tijdlijn" />
                 <StatKaart label="Jaarkentekens" waarde={stats.kentekens} icon="🧭" href="/beheer/tijdlijn/kentekens" />
+                <StatKaart label="Foto's" waarde={stats.fotosGepubliceerd} icon="📷" href="/beheer/fotos" />
                 <StatKaart label="Links" waarde={stats.links} icon="🔗" href="/beheer/links" />
               </div>
             </div>
