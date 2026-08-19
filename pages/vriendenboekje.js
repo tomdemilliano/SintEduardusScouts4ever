@@ -1,18 +1,26 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory } from '../lib/dbSchema';
+import { EntryFactory, PhotoFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import PublicNav from '../components/PublicNav';
 
 export default function VriendenboekjePage() {
   const [entries, setEntries] = useState([]);
+  const [fotoAantallen, setFotoAantallen] = useState({});
   const [loading, setLoading] = useState(true);
   const [zoek, setZoek] = useState('');
 
   useEffect(() => {
-    EntryFactory.getPublished().then((e) => {
+    Promise.all([EntryFactory.getPublished(), PhotoFactory.getPublished()]).then(([e, fotos]) => {
       setEntries(e);
+      const aantallen = {};
+      fotos.forEach((foto) => {
+        (foto.taggedEntryIds || []).forEach((entryId) => {
+          aantallen[entryId] = (aantallen[entryId] || 0) + 1;
+        });
+      });
+      setFotoAantallen(aantallen);
       setLoading(false);
     });
   }, []);
@@ -181,6 +189,22 @@ export default function VriendenboekjePage() {
                 <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>
                   {entry.periode}
                 </div>
+                {fotoAantallen[entry.id] > 0 && (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      marginTop: 8,
+                      fontFamily: fonts.body,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: colors.forest,
+                    }}
+                  >
+                    📷 {fotoAantallen[entry.id]}
+                  </div>
+                )}
               </div>
             </Link>
           ))}
