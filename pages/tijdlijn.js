@@ -44,6 +44,7 @@ export default function TijdlijnPage() {
   const scrollBottomRef = useRef(null);
   const syncBezig = useRef(false);
   const [sliderPercent, setSliderPercent] = useState(0);
+  const [zichtbaarJaar, setZichtbaarJaar] = useState(STARTJAAR);
 
   const load = () => {
     Promise.all([
@@ -78,6 +79,11 @@ export default function TijdlijnPage() {
 
   const pixelFor = (jaar) => NAAM_KOLOM + (jaar - STARTJAAR) * PX_PER_JAAR;
 
+  const jaarVoorScrollLeft = (scrollLeft) => {
+    const jaar = STARTJAAR + Math.round(scrollLeft / PX_PER_JAAR);
+    return Math.min(Math.max(jaar, STARTJAAR), eindJaar);
+  };
+
   const mijlpalenScouting = mijlpalen.filter((m) => m.type === 'scouting');
   const mijlpalenGroep = mijlpalen.filter((m) => m.type !== 'scouting');
 
@@ -95,6 +101,7 @@ export default function TijdlijnPage() {
       if (doel) doel.scrollLeft = bron.scrollLeft;
     });
     setSliderPercent(max > 0 ? (bron.scrollLeft / max) * 100 : 0);
+    setZichtbaarJaar(jaarVoorScrollLeft(bron.scrollLeft));
   };
 
   const maakScrollHandler = (bronRef, doelRefs) => () => {
@@ -111,11 +118,15 @@ export default function TijdlijnPage() {
   const handleSliderChange = (e) => {
     const percent = Number(e.target.value);
     setSliderPercent(percent);
+    let laatsteScrollLeft = 0;
     [scrollTopRef.current, scrollLeidingRef.current, scrollBottomRef.current].forEach((el) => {
       if (!el) return;
       const max = el.scrollWidth - el.clientWidth;
-      el.scrollLeft = (percent / 100) * max;
+      const scrollLeft = (percent / 100) * max;
+      el.scrollLeft = scrollLeft;
+      laatsteScrollLeft = scrollLeft;
     });
+    setZichtbaarJaar(jaarVoorScrollLeft(laatsteScrollLeft));
   };
 
   const openLeidingDetail = (takId, werkingsjaarStart) => {
@@ -215,9 +226,11 @@ export default function TijdlijnPage() {
                 onChange={handleSliderChange}
                 className="vb-jaarslider"
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, marginTop: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, marginTop: 4 }}>
                 <span>{STARTJAAR}</span>
-                <span>← sleep om door de jaren te bladeren →</span>
+                <span style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 700, color: colors.campfire }}>
+                  {zichtbaarJaar}
+                </span>
                 <span>{eindJaar}</span>
               </div>
             </div>
@@ -235,7 +248,7 @@ export default function TijdlijnPage() {
                 padding: '16px 0',
               }}
             >
-              <div style={{ width: totaleBreedte }}>
+              <div style={{ width: totaleBreedte, position: 'relative' }}>
                 {/* Jaartallen-as */}
                 <div style={{ position: 'relative', height: 20, marginBottom: 10 }}>
                   {tickJaren().map((jaar) => (
@@ -343,6 +356,8 @@ export default function TijdlijnPage() {
                     ))}
                   </div>
                 )}
+
+                <Jaarlijn jaar={zichtbaarJaar} />
               </div>
             </div>
 
@@ -520,7 +535,7 @@ export default function TijdlijnPage() {
                 )}
 
                 <div ref={scrollLeidingRef} onScroll={handleScrollLeiding} style={{ overflowX: 'auto', overflowY: 'hidden' }}>
-                  <div style={{ width: totaleBreedte }}>
+                  <div style={{ width: totaleBreedte, position: 'relative' }}>
                     {takken.map((tak) => {
                       const items = leidingLijst.filter((l) => l.takId === tak.id);
                       return (
@@ -549,6 +564,7 @@ export default function TijdlijnPage() {
                         </div>
                       );
                     })}
+                    <Jaarlijn jaar={zichtbaarJaar} />
                   </div>
                 </div>
               </div>
@@ -685,7 +701,7 @@ export default function TijdlijnPage() {
                 marginTop: 12,
               }}
             >
-              <div style={{ width: totaleBreedte, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ width: totaleBreedte, position: 'relative', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {rijen.map((entry) => {
                   const linksPx = pixelFor(entry.start);
                   const heeftEind = entry.end != null;
@@ -700,6 +716,8 @@ export default function TijdlijnPage() {
                             left: 0,
                             zIndex: 2,
                             width: NAAM_KOLOM,
+                            paddingLeft: 12,
+                            boxSizing: 'border-box',
                             background: colors.paperCard,
                             fontFamily: fonts.display,
                             fontSize: 13,
@@ -755,6 +773,7 @@ export default function TijdlijnPage() {
                     </Link>
                   );
                 })}
+                <Jaarlijn jaar={zichtbaarJaar} />
               </div>
             </div>
 
@@ -833,6 +852,24 @@ export default function TijdlijnPage() {
   );
 }
 
+function Jaarlijn({ jaar }) {
+  const left = NAAM_KOLOM + (jaar - STARTJAAR) * PX_PER_JAAR;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left,
+        top: 0,
+        bottom: 0,
+        width: 1,
+        background: colors.campfire,
+        opacity: 0.45,
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
+
 function RijLabel({ children }) {
   return (
     <div
@@ -841,6 +878,8 @@ function RijLabel({ children }) {
         left: 0,
         zIndex: 2,
         width: NAAM_KOLOM,
+        paddingLeft: 12,
+        boxSizing: 'border-box',
         background: colors.paperCard,
         fontFamily: fonts.body,
         fontSize: 12,
