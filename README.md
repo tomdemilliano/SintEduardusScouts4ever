@@ -301,3 +301,30 @@ categorieën ("tags"), bv. "Kampvuur", "Groepsfoto", "Zwemmen":
 Nieuwe Firestore-collectie: `photoTags` (publiek leesbaar, enkel
 beheerder schrijft). Foto's kregen er een `tagIds`-veld bij (array van
 tag-ID's), mee opgenomen in de publieke tag-update-regel.
+
+## Extra beveiliging + foto's draaien
+
+- **Publiek: bewerken achter een knop.** Op `/fotos/[id]` worden jaar,
+  locatie, wie erop staat, categorie en extra info nu standaard als
+  gewone leestekst getoond. Pas na een klik op "✏️ Bewerken" verschijnt
+  het invulformulier, met een expliciete "Opslaan"/"Annuleren". Dat
+  voorkomt onbedoelde wijzigingen door per ongeluk te klikken/typen in
+  een veld dat toch al bewerkbaar stond.
+- **Foto draaien** (90° per klik, zowel in `/beheer/fotos` als op
+  `/fotos/[id]`, enkel zichtbaar in bewerk-modus): dit is een échte
+  pixel-rotatie via canvas (`lib/utils.js` → `rotateImageFile`), geen
+  CSS-transform. Het resultaat wordt als nieuw bestand naar Storage
+  geüpload en vervangt de oude `afbeeldingUrl`/`afbeeldingPath`
+  (`PhotoFactory.replaceImage`), zodat de gedraaide foto meteen overal
+  correct verschijnt — kaartjes, profielpagina's, gedeelde links — zonder
+  dat elke plek waar een foto getoond wordt aparte rotatielogica nodig heeft.
+
+  Om dit publiek mogelijk te maken, staat de update-rule in
+  `firestore.rules` toe dat `afbeeldingUrl`/`afbeeldingPath` wijzigen,
+  maar enkel naar een pad onder `vriendenboekje/fotos/` in Storage — geen
+  willekeurige externe URL. Kanttekening: de Storage-rule laat enkel
+  ingelogde beheerders oude bestanden effectief verwijderen; draait een
+  bezoeker een foto, dan blijft het oude (vervangen) bestand in Storage
+  staan. Dat kost wat extra opslag, maar breekt niets — het is puur een
+  opruim-detail dat de beheerder eventueel manueel kan doen via de
+  Firebase-console.
