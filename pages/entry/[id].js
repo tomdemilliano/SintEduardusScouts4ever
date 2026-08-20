@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory, PhotoFactory } from '../../lib/dbSchema';
+import { EntryFactory, PhotoFactory, LeidingFactory, TakFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
-import { toDishArray } from '../../lib/utils';
+import { toDishArray, werkingsjaarLabel } from '../../lib/utils';
 
 export default function EntryDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [entry, setEntry] = useState(null);
   const [fotos, setFotos] = useState([]);
+  const [leidingJaren, setLeidingJaren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toonScan, setToonScan] = useState(false);
 
@@ -22,6 +23,15 @@ export default function EntryDetailPage() {
       setLoading(false);
       if (geldig) {
         PhotoFactory.getByEntryId(id).then(setFotos);
+        Promise.all([LeidingFactory.getByEntryId(id), TakFactory.getAll()]).then(([leidingData, takken]) => {
+          const lijst = leidingData
+            .map((item) => ({
+              werkingsjaarStart: item.werkingsjaarStart,
+              takNaam: takken.find((t) => t.id === item.takId)?.naam || '(onbekende tak)',
+            }))
+            .sort((a, b) => b.werkingsjaarStart - a.werkingsjaarStart);
+          setLeidingJaren(lijst);
+        });
       }
     });
   }, [id]);
@@ -214,6 +224,33 @@ export default function EntryDetailPage() {
                         {gerecht}
                       </span>
                     ))}
+                </div>
+              </div>
+            )}
+
+            {leidingJaren.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    color: colors.forest,
+                    marginBottom: 6,
+                  }}
+                >
+                  👥 Leiding
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {leidingJaren.map((item, i) => (
+                    <div key={i} style={{ fontFamily: fonts.body, fontSize: 15, color: colors.ink }}>
+                      <span style={{ fontWeight: 600 }}>{item.takNaam}</span>
+                      {' — '}
+                      {werkingsjaarLabel(item.werkingsjaarStart)}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
