@@ -401,3 +401,19 @@ Drie aanpassingen op de eerdere leidingsploeg-functie:
   halfdoorzichtige verticale lijn getoond in alle drie de kaders
   (kentekens/mijlpalen, leidingsploegen, leden), zodat je in één oogopslag
   ziet welk jaartal overeenkomt met wat er net zichtbaar is.
+
+## Bugfix: foto draaien gaf een CORS-fout
+
+Firebase Storage staat standaard niet toe dat de browser de ruwe pixels
+van een afbeelding op een ander domein rechtstreeks in een canvas inleest
+(nodig om te kunnen draaien) — dat vereist normaal een aparte CORS-
+configuratie op de Storage-bucket zelf via de Google Cloud CLI
+(`gsutil cors set`), buiten `firestore.rules`/`storage.rules` om.
+
+In plaats daarvan lost `pages/api/proxy-image.js` dit op binnen de app
+zelf: een kleine server-route die de afbeelding server-side ophaalt (waar
+geen CORS-beperking geldt) en teruggeeft aan de browser. Voor de browser
+is de afbeelding dan "same-origin", en kan `rotateImageFile` (in
+`lib/utils.js`) ze gewoon inlezen. De route accepteert enkel URL's van
+`firebasestorage.googleapis.com`, zodat ze niet als open proxy voor
+andere sites misbruikt kan worden.
