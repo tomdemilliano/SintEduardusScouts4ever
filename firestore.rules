@@ -101,6 +101,14 @@ service cloud.firestore {
         && request.resource.data.contactEmail.size() < 200;
     }
 
+    match /photoTags/{tagId} {
+      // De lijst van mogelijke foto-tags is publiek leesbaar (nodig voor de
+      // filter en het toekennen van tags); enkel de beheerder maakt/wijzigt/
+      // verwijdert een categorie, om wildgroei te vermijden.
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     match /photos/{photoId} {
       // Gepubliceerde foto's zijn publiek leesbaar; beheerders zien alles
       // (ook 'pending', voor goedkeuring).
@@ -135,8 +143,14 @@ service cloud.firestore {
         && (request.resource.data.jaar == null || request.resource.data.jaar is int)
         && request.resource.data.locatie is string
         && request.resource.data.locatie.size() < 200
+        && request.resource.data.beschrijving is string
+        && request.resource.data.beschrijving.size() < 500
         && request.resource.data.ledenTags is list
         && request.resource.data.ledenTags.size() < 30
+        && request.resource.data.taggedEntryIds is list
+        && request.resource.data.taggedEntryIds.size() < 30
+        && request.resource.data.tagIds is list
+        && request.resource.data.tagIds.size() < 20
         && request.resource.data.verwijderReden is string
         && request.resource.data.verwijderReden.size() < 300;
     }
