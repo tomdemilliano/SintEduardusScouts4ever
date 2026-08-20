@@ -357,3 +357,32 @@ terwijl de volledige info één klik verwijderd is.
 
 Nieuwe Firestore-collecties: `scoutTakken` en `leidingsploegen` (beide
 publiek leesbaar, enkel beheerder schrijft — zie `firestore.rules`).
+
+## Update: leidingsploegen — nu crowdsourced en met een eigen vak
+
+Drie aanpassingen op de eerdere leidingsploeg-functie:
+
+1. **Crowdsourced, net als de foto's.** Iedereen mag, zonder in te loggen,
+   een leidingsploeg voor een tak+werkingsjaar toevoegen of corrigeren
+   (`firestore.rules`: `leidingsploegen` staat nu publieke `create`/
+   `update` toe, met basisvalidatie). Enkel het **verwijderen** van een
+   document blijft beheerder-only — een foutieve inzending corrigeer je
+   door de juiste namen opnieuw op te slaan, niet door te verwijderen.
+   De takken-lijst zelf blijft wel beheerder-only (om wildgroei te
+   vermijden), en de **volgorde** van de takken is nu ook door de
+   beheerder instelbaar via pijltjes-knoppen op `/beheer/tijdlijn/takken`.
+
+2. **Eigen, apart vak op de tijdlijn.** In plaats van één smalle rij met
+   jaar-bolletjes staat er nu een volledig apart kader **"Leidingsploegen
+   per tak"**, met per tak (in de door de beheerder bepaalde volgorde)
+   een eigen rij met bolletjes op de jaren waarvoor er gegevens zijn. Dit
+   vak scrollt gesynchroniseerd mee met de rest van de tijdlijn (dezelfde
+   custom slider). Een klik op een bolletje opent een detailkaart met de
+   ploeg van die tak in dat jaar — inclusief dezelfde "eerst lezen, dan
+   pas bewerken"-beveiliging als bij de foto's, om onbedoelde wijzigingen
+   te vermijden. Er staat ook een duidelijke **"+ Leidingsploeg
+   toevoegen"**-knop bovenaan dat vak voor nieuwe combinaties.
+
+3. **Op het profiel van een lid** (`/entry/[id]`) staat nu een "👥
+   Leiding"-lijstje met alle tak+werkingsjaar-combinaties waarin die
+   persoon in de leidingsploeg zat (nieuwste eerst).
