@@ -44,7 +44,6 @@ export default function TijdlijnPage() {
   const scrollBottomRef = useRef(null);
   const syncBezig = useRef(false);
   const [sliderPercent, setSliderPercent] = useState(0);
-  const [zichtbaarJaar, setZichtbaarJaar] = useState(STARTJAAR);
 
   const load = () => {
     Promise.all([
@@ -79,10 +78,12 @@ export default function TijdlijnPage() {
 
   const pixelFor = (jaar) => NAAM_KOLOM + (jaar - STARTJAAR) * PX_PER_JAAR;
 
-  const jaarVoorScrollLeft = (scrollLeft) => {
-    const jaar = STARTJAAR + Math.round(scrollLeft / PX_PER_JAAR);
-    return Math.min(Math.max(jaar, STARTJAAR), eindJaar);
-  };
+  // Rechtstreeks uit het schuifpercentage afgeleid (0% = STARTJAAR, 100% =
+  // eindJaar) — dit garandeert dat je bij helemaal doorschuiven ook echt
+  // het eindjaar te zien krijgt, in tegenstelling tot een berekening op
+  // basis van scrollpositie (die afhangt van de kaderbreedte en dus nooit
+  // helemaal tot het eindjaar kwam).
+  const zichtbaarJaar = Math.round(STARTJAAR + (sliderPercent / 100) * (eindJaar - STARTJAAR));
 
   const mijlpalenScouting = mijlpalen.filter((m) => m.type === 'scouting');
   const mijlpalenGroep = mijlpalen.filter((m) => m.type !== 'scouting');
@@ -101,7 +102,6 @@ export default function TijdlijnPage() {
       if (doel) doel.scrollLeft = bron.scrollLeft;
     });
     setSliderPercent(max > 0 ? (bron.scrollLeft / max) * 100 : 0);
-    setZichtbaarJaar(jaarVoorScrollLeft(bron.scrollLeft));
   };
 
   const maakScrollHandler = (bronRef, doelRefs) => () => {
@@ -118,15 +118,11 @@ export default function TijdlijnPage() {
   const handleSliderChange = (e) => {
     const percent = Number(e.target.value);
     setSliderPercent(percent);
-    let laatsteScrollLeft = 0;
     [scrollTopRef.current, scrollLeidingRef.current, scrollBottomRef.current].forEach((el) => {
       if (!el) return;
       const max = el.scrollWidth - el.clientWidth;
-      const scrollLeft = (percent / 100) * max;
-      el.scrollLeft = scrollLeft;
-      laatsteScrollLeft = scrollLeft;
+      el.scrollLeft = (percent / 100) * max;
     });
-    setZichtbaarJaar(jaarVoorScrollLeft(laatsteScrollLeft));
   };
 
   const openLeidingDetail = (takId, werkingsjaarStart) => {
