@@ -8,7 +8,8 @@ import AdminSubNav from '../../../components/AdminSubNav';
 
 const TABS = [
   { href: '/beheer/fotos', label: 'Overzicht', exact: true },
-  { href: '/beheer/fotos/toevoegen', label: '+ Foto\'s toevoegen' },
+  { href: '/beheer/fotos/toevoegen', label: "+ Foto's toevoegen" },
+  { href: '/beheer/fotos/tags', label: 'Tags' },
 ];
 
 const STATUS_LABEL = {
