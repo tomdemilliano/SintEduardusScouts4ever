@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { PhotoFactory } from '../lib/dbSchema';
+import { PhotoFactory, PhotoTagFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import PublicNav from '../components/PublicNav';
+import TagFilterPicker from '../components/TagFilterPicker';
 
 export default function FotosPage() {
   const [fotos, setFotos] = useState([]);
+  const [alleTags, setAlleTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [jaarFilter, setJaarFilter] = useState('alle');
   const [locatieFilter, setLocatieFilter] = useState('alle');
+  const [tagFilter, setTagFilter] = useState([]);
   const [ledenZoek, setLedenZoek] = useState('');
   const [enkelOngetagd, setEnkelOngetagd] = useState(false);
 
   useEffect(() => {
-    PhotoFactory.getPublished().then((f) => {
+    Promise.all([PhotoFactory.getPublished(), PhotoTagFactory.getAll()]).then(([f, t]) => {
       setFotos(f);
+      setAlleTags(t);
       setLoading(false);
     });
   }, []);
@@ -32,6 +36,7 @@ export default function FotosPage() {
   const gefilterd = fotos.filter((f) => {
     if (jaarFilter !== 'alle' && f.jaar !== parseInt(jaarFilter, 10)) return false;
     if (locatieFilter !== 'alle' && f.locatie !== locatieFilter) return false;
+    if (tagFilter.length > 0 && !tagFilter.every((t) => (f.tagIds || []).includes(t))) return false;
     if (ledenZoek.trim()) {
       const term = ledenZoek.trim().toLowerCase();
       if (!(f.ledenTags || []).some((t) => t.naam.toLowerCase().includes(term))) return false;
@@ -94,6 +99,7 @@ export default function FotosPage() {
               </option>
             ))}
           </select>
+          <TagFilterPicker alleTags={alleTags} geselecteerd={tagFilter} onChange={setTagFilter} />
           <input
             type="text"
             value={ledenZoek}
@@ -131,7 +137,7 @@ export default function FotosPage() {
           }}
         >
           {gefilterd.map((foto) => (
-            <FotoKaart key={foto.id} foto={foto} />
+            <FotoKaart key={foto.id} foto={foto} alleTags={alleTags} />
           ))}
         </div>
 
@@ -145,9 +151,12 @@ export default function FotosPage() {
   );
 }
 
-function FotoKaart({ foto }) {
+function FotoKaart({ foto, alleTags }) {
   const [fout, setFout] = useState(false);
   const getagd = foto.jaar || foto.locatie || (foto.ledenTags && foto.ledenTags.length > 0);
+  const tagNamen = (foto.tagIds || [])
+    .map((id) => alleTags.find((t) => t.id === id)?.naam)
+    .filter(Boolean);
 
   return (
     <Link href={`/fotos/${foto.id}`} style={{ textDecoration: 'none' }}>
@@ -205,8 +214,13 @@ function FotoKaart({ foto }) {
           </span>
         )}
         {(foto.jaar || foto.locatie) && (
-          <div style={{ padding: '6px 8px', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted }}>
+          <div style={{ padding: '6px 8px 2px', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted }}>
             {[foto.jaar, foto.locatie].filter(Boolean).join(' · ')}
+          </div>
+        )}
+        {tagNamen.length > 0 && (
+          <div style={{ padding: '0 8px 6px', fontFamily: fonts.body, fontSize: 10, color: colors.forest, fontWeight: 600 }}>
+            {tagNamen.join(' · ')}
           </div>
         )}
       </div>
