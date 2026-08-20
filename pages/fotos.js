@@ -18,6 +18,9 @@ export default function FotosPage() {
 
   useEffect(() => {
     Promise.all([PhotoFactory.getPublished(), PhotoTagFactory.getAll()]).then(([f, t]) => {
+      // Vaste, voorspelbare sortering (nieuwste eerst) i.p.v. de
+      // onbepaalde volgorde die Firestore standaard teruggeeft.
+      f.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setFotos(f);
       setAlleTags(t);
       setLoading(false);
@@ -37,20 +40,37 @@ export default function FotosPage() {
     setTagFilter((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
   };
 
-  const gefilterd = fotos.filter((f) => {
-    if (jaarFilter !== 'alle' && f.jaar !== parseInt(jaarFilter, 10)) return false;
-    if (locatieFilter !== 'alle' && f.locatie !== locatieFilter) return false;
-    if (tagFilter.length > 0 && !tagFilter.every((t) => (f.tagIds || []).includes(t))) return false;
-    if (ledenZoek.trim()) {
-      const term = ledenZoek.trim().toLowerCase();
-      if (!(f.ledenTags || []).some((t) => t.naam.toLowerCase().includes(term))) return false;
+  const gefilterd = useMemo(
+    () =>
+      fotos.filter((f) => {
+        if (jaarFilter !== 'alle' && f.jaar !== parseInt(jaarFilter, 10)) return false;
+        if (locatieFilter !== 'alle' && f.locatie !== locatieFilter) return false;
+        if (tagFilter.length > 0 && !tagFilter.every((t) => (f.tagIds || []).includes(t))) return false;
+        if (ledenZoek.trim()) {
+          const term = ledenZoek.trim().toLowerCase();
+          if (!(f.ledenTags || []).some((t) => t.naam.toLowerCase().includes(term))) return false;
+        }
+        if (enkelOngetagd) {
+          const ongetagd = !f.jaar && !f.locatie && (!f.ledenTags || f.ledenTags.length === 0);
+          if (!ongetagd) return false;
+        }
+        return true;
+      }),
+    [fotos, jaarFilter, locatieFilter, tagFilter, ledenZoek, enkelOngetagd]
+  );
+
+  // Onthoud de exacte volgorde die de bezoeker nu ziet (mét filters), zodat
+  // vorige/volgende op de detailpagina van een foto diezelfde volgorde en
+  // selectie kan volgen i.p.v. een andere, losse sortering.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem('vb-fotos-volgorde', JSON.stringify(gefilterd.map((f) => f.id)));
+    } catch (e) {
+      // sessionStorage niet beschikbaar (bv. privénavigatie) — geen probleem,
+      // de detailpagina valt dan gewoon terug op de standaardvolgorde.
     }
-    if (enkelOngetagd) {
-      const ongetagd = !f.jaar && !f.locatie && (!f.ledenTags || f.ledenTags.length === 0);
-      if (!ongetagd) return false;
-    }
-    return true;
-  });
+  }, [gefilterd]);
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
