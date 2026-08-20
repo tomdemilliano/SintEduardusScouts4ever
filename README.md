@@ -435,3 +435,24 @@ altijd hetzelfde resultaat — het is puur een kwestie van welke van de
 twee zichtbaar is, geregeld via een CSS media query (`@media (max-width:
 680px)` in `pages/fotos.js`) in plaats van JavaScript-schermbreedte-
 detectie, om een hydration-mismatch tussen server en browser te vermijden.
+
+## Bugfix: sortering en navigatie foto's kwamen niet overeen
+
+Twee samenhangende problemen:
+- Het overzicht (`/fotos`) toonde de foto's in de onbepaalde volgorde die
+  Firestore toevallig teruggaf (geen `orderBy`), wat willekeurig aanvoelde.
+- Vorige/volgende op de detailpagina volgde altijd *alle* gepubliceerde
+  foto's op datum, zonder rekening te houden met een filter dat je net op
+  het overzicht had ingesteld — dus de volgorde bij het doorklikken kwam
+  niet overeen met wat je net zag, en filters werden genegeerd.
+
+Oplossing:
+- `/fotos` sorteert nu altijd expliciet op **nieuwste eerst**
+  (`createdAt`), voor een voorspelbare volgorde.
+- Bij elke wijziging van de filters slaat `/fotos` de **exacte, gefilterde
+  lijst foto-ID's** op in `sessionStorage` (`vb-fotos-volgorde`).
+- `/fotos/[id]` leest die lijst in bij het openen en gebruikt ze voor
+  vorige/volgende, zodat je door precies dezelfde (eventueel gefilterde)
+  set foto's bladert als op het overzicht. Kwam je niet via het overzicht
+  binnen (bv. een gedeelde link), dan valt de detailpagina netjes terug op
+  alle gepubliceerde foto's, gesorteerd op datum.
