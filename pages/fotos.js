@@ -33,6 +33,10 @@ export default function FotosPage() {
     [fotos]
   );
 
+  const toggleTag = (id) => {
+    setTagFilter((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+  };
+
   const gefilterd = fotos.filter((f) => {
     if (jaarFilter !== 'alle' && f.jaar !== parseInt(jaarFilter, 10)) return false;
     if (locatieFilter !== 'alle' && f.locatie !== locatieFilter) return false;
@@ -55,7 +59,7 @@ export default function FotosPage() {
         <title>Foto's — Vrienden van Sint-Eduardusscouts</title>
       </Head>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px 100px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 20px 100px' }}>
         <PublicNav />
 
         <div style={{ textAlign: 'center', margin: '28px 0 16px' }}>
@@ -81,73 +85,157 @@ export default function FotosPage() {
           </Link>
         </div>
 
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 24 }}>
-          <select value={jaarFilter} onChange={(e) => setJaarFilter(e.target.value)} style={selectStyle}>
-            <option value="alle">Alle jaren</option>
-            {jaren.map((j) => (
-              <option key={j} value={j}>
-                {j}
-              </option>
-            ))}
-          </select>
-          <select value={locatieFilter} onChange={(e) => setLocatieFilter(e.target.value)} style={selectStyle}>
-            <option value="alle">Alle locaties</option>
-            {locaties.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-          <TagFilterPicker alleTags={alleTags} geselecteerd={tagFilter} onChange={setTagFilter} />
-          <input
-            type="text"
-            value={ledenZoek}
-            onChange={(e) => setLedenZoek(e.target.value)}
-            placeholder="Zoek op naam…"
-            style={{ ...selectStyle, minWidth: 160 }}
-          />
-          <button
-            onClick={() => setEnkelOngetagd((v) => !v)}
-            style={{
-              padding: '8px 14px',
-              borderRadius: radius.badge,
-              border: `1.5px solid ${enkelOngetagd ? colors.campfire : colors.line}`,
-              background: enkelOngetagd ? colors.campfire : colors.white,
-              color: enkelOngetagd ? colors.white : colors.ink,
-              fontFamily: fonts.body,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            🏷️ Nog niet getagd
-          </button>
-        </div>
-
         {loading && (
           <p style={{ textAlign: 'center', fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>
         )}
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-            gap: 12,
-          }}
-        >
-          {gefilterd.map((foto) => (
-            <FotoKaart key={foto.id} foto={foto} alleTags={alleTags} />
-          ))}
-        </div>
+        {!loading && (
+          <div className="vb-fotos-layout">
+            {/* Categorieën — altijd zichtbaar op grotere schermen, links; op mobiel via het knopje bij de filters */}
+            {alleTags.length > 0 && (
+              <aside className="vb-tag-sidebar">
+                <div
+                  style={{
+                    fontFamily: fonts.body,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: colors.inkMuted,
+                    marginBottom: 10,
+                  }}
+                >
+                  Categorieën
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <SidebarItem actief={tagFilter.length === 0} onClick={() => setTagFilter([])}>
+                    Alle foto's
+                  </SidebarItem>
+                  {alleTags.map((tag) => (
+                    <SidebarItem key={tag.id} actief={tagFilter.includes(tag.id)} onClick={() => toggleTag(tag.id)}>
+                      {tag.naam}
+                    </SidebarItem>
+                  ))}
+                </div>
+              </aside>
+            )}
 
-        {!loading && gefilterd.length === 0 && (
-          <p style={{ textAlign: 'center', fontFamily: fonts.body, color: colors.inkMuted }}>
-            Geen foto's die aan deze filters voldoen.
-          </p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Filters */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
+                <select value={jaarFilter} onChange={(e) => setJaarFilter(e.target.value)} style={selectStyle}>
+                  <option value="alle">Alle jaren</option>
+                  {jaren.map((j) => (
+                    <option key={j} value={j}>
+                      {j}
+                    </option>
+                  ))}
+                </select>
+                <select value={locatieFilter} onChange={(e) => setLocatieFilter(e.target.value)} style={selectStyle}>
+                  <option value="alle">Alle locaties</option>
+                  {locaties.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+                {alleTags.length > 0 && (
+                  <div className="vb-tag-mobile-btn">
+                    <TagFilterPicker alleTags={alleTags} geselecteerd={tagFilter} onChange={setTagFilter} />
+                  </div>
+                )}
+                <input
+                  type="text"
+                  value={ledenZoek}
+                  onChange={(e) => setLedenZoek(e.target.value)}
+                  placeholder="Zoek op naam…"
+                  style={{ ...selectStyle, minWidth: 160 }}
+                />
+                <button
+                  onClick={() => setEnkelOngetagd((v) => !v)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: radius.badge,
+                    border: `1.5px solid ${enkelOngetagd ? colors.campfire : colors.line}`,
+                    background: enkelOngetagd ? colors.campfire : colors.white,
+                    color: enkelOngetagd ? colors.white : colors.ink,
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  🏷️ Nog niet getagd
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {gefilterd.map((foto) => (
+                  <FotoKaart key={foto.id} foto={foto} alleTags={alleTags} />
+                ))}
+              </div>
+
+              {gefilterd.length === 0 && (
+                <p style={{ textAlign: 'center', fontFamily: fonts.body, color: colors.inkMuted }}>
+                  Geen foto's die aan deze filters voldoen.
+                </p>
+              )}
+            </div>
+          </div>
         )}
+
+        <style jsx>{`
+          .vb-fotos-layout {
+            display: flex;
+            gap: 28px;
+            align-items: flex-start;
+          }
+          .vb-tag-sidebar {
+            width: 170px;
+            flex-shrink: 0;
+          }
+          .vb-tag-mobile-btn {
+            display: none;
+          }
+          @media (max-width: 680px) {
+            .vb-tag-sidebar {
+              display: none;
+            }
+            .vb-tag-mobile-btn {
+              display: block;
+            }
+          }
+        `}</style>
       </div>
     </div>
+  );
+}
+
+function SidebarItem({ children, actief, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        textAlign: 'left',
+        padding: '7px 12px',
+        borderRadius: radius.input,
+        border: 'none',
+        background: actief ? colors.forest : 'transparent',
+        color: actief ? colors.white : colors.ink,
+        fontFamily: fonts.body,
+        fontSize: 13,
+        fontWeight: actief ? 700 : 500,
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
