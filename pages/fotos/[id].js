@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { PhotoFactory } from '../../lib/dbSchema';
+import { PhotoFactory, PhotoTagFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
+import { rotateImageFile } from '../../lib/utils';
 import PublicNav from '../../components/PublicNav';
 import MemberTagPicker from '../../components/MemberTagPicker';
 import PhotoTagSelector from '../../components/PhotoTagSelector';
@@ -12,17 +13,19 @@ export default function FotoDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [foto, setFoto] = useState(null);
+  const [alleTags, setAlleTags] = useState([]);
   const [alleFotos, setAlleFotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [afbeeldingFout, setAfbeeldingFout] = useState(false);
 
+  const [bewerkModus, setBewerkModus] = useState(false);
   const [jaar, setJaar] = useState('');
   const [locatie, setLocatie] = useState('');
   const [beschrijving, setBeschrijving] = useState('');
   const [ledenTags, setLedenTags] = useState([]);
   const [tagIds, setTagIds] = useState([]);
   const [opslaanBezig, setOpslaanBezig] = useState(false);
-  const [opgeslagen, setOpgeslagen] = useState(false);
+  const [roterenBezig, setRoterenBezig] = useState(false);
 
   const [verwijderReden, setVerwijderReden] = useState('');
   const [verwijderBezig, setVerwijderBezig] = useState(false);
@@ -33,21 +36,16 @@ export default function FotoDetailPage() {
       lijst.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setAlleFotos(lijst);
     });
+    PhotoTagFactory.getAll().then(setAlleTags);
   }, []);
 
   useEffect(() => {
     if (!id) return;
     setAfbeeldingFout(false);
+    setBewerkModus(false);
     PhotoFactory.getById(id).then((f) => {
       const geldig = f && f.status === 'published';
       setFoto(geldig ? f : null);
-      if (geldig) {
-        setJaar(f.jaar ? String(f.jaar) : '');
-        setLocatie(f.locatie || '');
-        setBeschrijving(f.beschrijving || '');
-        setLedenTags(f.ledenTags || []);
-        setTagIds(f.tagIds || []);
-      }
       setLoading(false);
     });
   }, [id]);
@@ -65,6 +63,28 @@ export default function FotoDetailPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [vorigeFoto, volgendeFoto, router]);
 
+  const startBewerken = () => {
+    setJaar(foto.jaar ? String(foto.jaar) : '');
+    setLocatie(foto.locatie || '');
+    setBeschrijving(foto.beschrijving || '');
+    setLedenTags(foto.ledenTags || []);
+    setTagIds(foto.tagIds || []);
+    setBewerkModus(true);
+  };
+
+  const draaien = async () => {
+    setRoterenBezig(true);
+    try {
+      const bestand = await rotateImageFile(foto.afbeeldingUrl, 90);
+      const upload = await PhotoFactory.replaceImage(id, bestand, foto.afbeeldingPath);
+      setFoto((prev) => ({ ...prev, afbeeldingUrl: upload.url, afbeeldingPath: upload.path }));
+    } catch (err) {
+      alert('Draaien is mislukt, probeer opnieuw.');
+    } finally {
+      setRoterenBezig(false);
+    }
+  };
+
   const opslaan = async () => {
     setOpslaanBezig(true);
     try {
@@ -75,8 +95,15 @@ export default function FotoDetailPage() {
         ledenTags,
         tagIds,
       });
-      setOpgeslagen(true);
-      setTimeout(() => setOpgeslagen(false), 2500);
+      setFoto((prev) => ({
+        ...prev,
+        jaar: jaar ? parseInt(jaar, 10) : null,
+        locatie: locatie.trim(),
+        beschrijving: beschrijving.trim(),
+        ledenTags,
+        tagIds,
+      }));
+      setBewerkModus(false);
     } finally {
       setOpslaanBezig(false);
     }
@@ -176,74 +203,144 @@ export default function FotoDetailPage() {
           </div>
         ) : (
           <>
-            <div style={{ background: colors.paperCard, border: `1px solid ${colors.line}`, borderRadius: radius.card, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
-              <div>
-                <Label>Jaar</Label>
-                <input
-                  type="number"
-                  value={jaar}
-                  onChange={(e) => setJaar(e.target.value)}
-                  placeholder="bv. 1978"
-                  style={inputStyle}
+            {!bewerkModus ? (
+              <div style={{ background: colors.paperCard, border: `1px solid ${colors.line}`, borderRadius: radius.card, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+                <LeesVeld label="Jaar" waarde={foto.jaar} />
+                <LeesVeld label="Locatie" waarde={foto.locatie} />
+                <LeesVeld label="Wie staat erop?" waarde={(foto.ledenTags || []).map((t) => t.naam).join(', ')} />
+                <LeesVeld
+                  label="Categorie"
+                  waarde={(foto.tagIds || [])
+                    .map((tid) => alleTags.find((t) => t.id === tid)?.naam)
+                    .filter(Boolean)
+                    .join(', ')}
                 />
-              </div>
-              <div>
-                <Label>Locatie</Label>
-                <input
-                  type="text"
-                  value={locatie}
-                  onChange={(e) => setLocatie(e.target.value)}
-                  placeholder="bv. Falmignoul (Walzin)"
-                  style={inputStyle}
-                />
-              </div>
-              <div>
-                <Label>Wie staat erop?</Label>
-                <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
-              </div>
-              <div>
-                <Label>Categorie (optioneel)</Label>
-                <PhotoTagSelector value={tagIds} onChange={setTagIds} />
-              </div>
-              <div>
-                <Label>Extra info (optioneel)</Label>
-                <textarea
-                  value={beschrijving}
-                  onChange={(e) => setBeschrijving(e.target.value)}
-                  placeholder="bv. wat er op de foto te zien is, een leuke anekdote…"
-                  rows={3}
-                  style={{ ...inputStyle, resize: 'vertical' }}
-                />
-              </div>
+                <LeesVeld label="Extra info" waarde={foto.beschrijving} />
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <button
-                  onClick={opslaan}
-                  disabled={opslaanBezig}
+                  onClick={startBewerken}
                   style={{
-                    padding: '10px 22px',
+                    alignSelf: 'flex-start',
+                    marginTop: 6,
+                    padding: '9px 20px',
                     borderRadius: radius.badge,
                     border: 'none',
-                    background: opslaanBezig ? colors.inkMuted : colors.forest,
+                    background: colors.forest,
                     color: colors.white,
                     fontFamily: fonts.body,
                     fontWeight: 600,
                     fontSize: 13,
-                    cursor: opslaanBezig ? 'default' : 'pointer',
+                    cursor: 'pointer',
                   }}
                 >
-                  {opslaanBezig ? 'Bezig…' : 'Opslaan'}
+                  ✏️ Bewerken
                 </button>
-                {opgeslagen && (
-                  <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.forest, fontWeight: 600 }}>
-                    ✓ Opgeslagen
-                  </span>
-                )}
+                <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: 0 }}>
+                  Klik op "Bewerken" om jaar, locatie, wie erop staat, categorie of extra info aan te vullen of te corrigeren.
+                </p>
               </div>
-              <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: 0 }}>
-                Iedereen kan deze gegevens aanvullen of corrigeren — zo helpen we samen de foto's te sorteren.
-              </p>
-            </div>
+            ) : (
+              <div style={{ background: colors.paperCard, border: `1.5px solid ${colors.forest}`, borderRadius: radius.card, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+                <div>
+                  <Label>Foto verkeerd georiënteerd?</Label>
+                  <button
+                    onClick={draaien}
+                    disabled={roterenBezig}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: radius.badge,
+                      border: `1px solid ${colors.line}`,
+                      background: colors.white,
+                      color: colors.ink,
+                      fontFamily: fonts.body,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: roterenBezig ? 'default' : 'pointer',
+                    }}
+                  >
+                    {roterenBezig ? 'Bezig met draaien…' : '↻ 90° draaien'}
+                  </button>
+                </div>
+
+                <div>
+                  <Label>Jaar</Label>
+                  <input
+                    type="number"
+                    value={jaar}
+                    onChange={(e) => setJaar(e.target.value)}
+                    placeholder="bv. 1978"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <Label>Locatie</Label>
+                  <input
+                    type="text"
+                    value={locatie}
+                    onChange={(e) => setLocatie(e.target.value)}
+                    placeholder="bv. Falmignoul (Walzin)"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <Label>Wie staat erop?</Label>
+                  <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
+                </div>
+                <div>
+                  <Label>Categorie (optioneel)</Label>
+                  <PhotoTagSelector value={tagIds} onChange={setTagIds} />
+                </div>
+                <div>
+                  <Label>Extra info (optioneel)</Label>
+                  <textarea
+                    value={beschrijving}
+                    onChange={(e) => setBeschrijving(e.target.value)}
+                    placeholder="bv. wat er op de foto te zien is, een leuke anekdote…"
+                    rows={3}
+                    style={{ ...inputStyle, resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    onClick={opslaan}
+                    disabled={opslaanBezig}
+                    style={{
+                      padding: '10px 22px',
+                      borderRadius: radius.badge,
+                      border: 'none',
+                      background: opslaanBezig ? colors.inkMuted : colors.forest,
+                      color: colors.white,
+                      fontFamily: fonts.body,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: opslaanBezig ? 'default' : 'pointer',
+                    }}
+                  >
+                    {opslaanBezig ? 'Bezig…' : 'Opslaan'}
+                  </button>
+                  <button
+                    onClick={() => setBewerkModus(false)}
+                    style={{
+                      padding: '10px 22px',
+                      borderRadius: radius.badge,
+                      border: `1px solid ${colors.line}`,
+                      background: 'transparent',
+                      color: colors.inkMuted,
+                      fontFamily: fonts.body,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Annuleren
+                  </button>
+                </div>
+                <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: 0 }}>
+                  Iedereen kan deze gegevens aanvullen of corrigeren — zo helpen we samen de foto's te sorteren.
+                </p>
+              </div>
+            )}
 
             <details>
               <summary style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, cursor: 'pointer' }}>
@@ -279,6 +376,29 @@ export default function FotoDetailPage() {
             </details>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function LeesVeld({ label, waarde }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: fonts.body,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          color: colors.forest,
+          marginBottom: 2,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontFamily: fonts.body, fontSize: 15, color: waarde ? colors.ink : colors.inkMuted }}>
+        {waarde || '—'}
       </div>
     </div>
   );
