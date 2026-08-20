@@ -228,6 +228,7 @@ function FotoBewerkKaart({ foto, onKlaar }) {
       setAfbeeldingPath(upload.path);
     } catch (err) {
       alert('Draaien is mislukt, probeer opnieuw.');
+      console.error('Fout bij het draaien van de foto:', err);
     } finally {
       setRoterenBezig(false);
     }
