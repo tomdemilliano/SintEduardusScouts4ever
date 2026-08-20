@@ -136,8 +136,13 @@ service cloud.firestore {
       allow update: if request.auth == null
         && resource.data.status == 'published'
         && request.resource.data.status == 'published'
-        && request.resource.data.afbeeldingUrl == resource.data.afbeeldingUrl
-        && request.resource.data.afbeeldingPath == resource.data.afbeeldingPath
+        // De afbeelding zelf mag vervangen worden (bv. na het draaien),
+        // maar enkel door een nieuw bestand onder het foto-pad in Storage
+        // -- geen willekeurige externe URL.
+        && request.resource.data.afbeeldingUrl is string
+        && request.resource.data.afbeeldingUrl.size() < 500
+        && request.resource.data.afbeeldingPath is string
+        && request.resource.data.afbeeldingPath.matches('vriendenboekje/fotos/.*')
         && request.resource.data.contactEmail == resource.data.contactEmail
         && request.resource.data.createdAt == resource.data.createdAt
         && (request.resource.data.jaar == null || request.resource.data.jaar is int)
