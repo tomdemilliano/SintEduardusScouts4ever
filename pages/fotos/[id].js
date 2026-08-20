@@ -6,6 +6,7 @@ import { PhotoFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import PublicNav from '../../components/PublicNav';
 import MemberTagPicker from '../../components/MemberTagPicker';
+import PhotoTagSelector from '../../components/PhotoTagSelector';
 
 export default function FotoDetailPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function FotoDetailPage() {
   const [locatie, setLocatie] = useState('');
   const [beschrijving, setBeschrijving] = useState('');
   const [ledenTags, setLedenTags] = useState([]);
+  const [tagIds, setTagIds] = useState([]);
   const [opslaanBezig, setOpslaanBezig] = useState(false);
   const [opgeslagen, setOpgeslagen] = useState(false);
 
@@ -44,6 +46,7 @@ export default function FotoDetailPage() {
         setLocatie(f.locatie || '');
         setBeschrijving(f.beschrijving || '');
         setLedenTags(f.ledenTags || []);
+        setTagIds(f.tagIds || []);
       }
       setLoading(false);
     });
@@ -70,6 +73,7 @@ export default function FotoDetailPage() {
         locatie: locatie.trim(),
         beschrijving: beschrijving.trim(),
         ledenTags,
+        tagIds,
       });
       setOpgeslagen(true);
       setTimeout(() => setOpgeslagen(false), 2500);
@@ -196,6 +200,10 @@ export default function FotoDetailPage() {
               <div>
                 <Label>Wie staat erop?</Label>
                 <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
+              </div>
+              <div>
+                <Label>Categorie (optioneel)</Label>
+                <PhotoTagSelector value={tagIds} onChange={setTagIds} />
               </div>
               <div>
                 <Label>Extra info (optioneel)</Label>
