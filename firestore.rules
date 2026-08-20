@@ -169,19 +169,16 @@ service cloud.firestore {
         && request.resource.data.afbeeldingPath.matches('vriendenboekje/fotos/.*')
         && request.resource.data.contactEmail == resource.data.contactEmail
         && request.resource.data.createdAt == resource.data.createdAt
-        && (request.resource.data.jaar == null || request.resource.data.jaar is int)
-        && request.resource.data.locatie is string
-        && request.resource.data.locatie.size() < 200
-        && request.resource.data.beschrijving is string
-        && request.resource.data.beschrijving.size() < 500
-        && request.resource.data.ledenTags is list
-        && request.resource.data.ledenTags.size() < 30
-        && request.resource.data.taggedEntryIds is list
-        && request.resource.data.taggedEntryIds.size() < 30
-        && request.resource.data.tagIds is list
-        && request.resource.data.tagIds.size() < 20
-        && request.resource.data.verwijderReden is string
-        && request.resource.data.verwijderReden.size() < 300;
+        // Onderstaande velden bestaan mogelijk niet op oudere foto's (van
+        // vóór deze velden werden toegevoegd) -- dan mag het gewoon
+        // ontbreken; is het wél aanwezig, dan moet het type kloppen.
+        && (!('jaar' in request.resource.data) || request.resource.data.jaar == null || request.resource.data.jaar is int)
+        && (!('locatie' in request.resource.data) || (request.resource.data.locatie is string && request.resource.data.locatie.size() < 200))
+        && (!('beschrijving' in request.resource.data) || (request.resource.data.beschrijving is string && request.resource.data.beschrijving.size() < 500))
+        && (!('ledenTags' in request.resource.data) || (request.resource.data.ledenTags is list && request.resource.data.ledenTags.size() < 30))
+        && (!('taggedEntryIds' in request.resource.data) || (request.resource.data.taggedEntryIds is list && request.resource.data.taggedEntryIds.size() < 30))
+        && (!('tagIds' in request.resource.data) || (request.resource.data.tagIds is list && request.resource.data.tagIds.size() < 20))
+        && (!('verwijderReden' in request.resource.data) || (request.resource.data.verwijderReden is string && request.resource.data.verwijderReden.size() < 300));
     }
   }
 }
