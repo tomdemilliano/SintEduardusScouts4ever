@@ -32,10 +32,27 @@ export default function FotoDetailPage() {
   const [verwijderVerzonden, setVerwijderVerzonden] = useState(false);
 
   useEffect(() => {
-    PhotoFactory.getPublished().then((lijst) => {
-      lijst.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setAlleFotos(lijst);
-    });
+    // De bezoeker kwam mogelijk van het overzicht met een filter actief —
+    // gebruik dan exact diezelfde, gefilterde volgorde voor vorige/volgende
+    // i.p.v. gewoon alle gepubliceerde foto's te doorlopen.
+    let opgeslagenVolgorde = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('vb-fotos-volgorde');
+        if (raw) opgeslagenVolgorde = JSON.parse(raw);
+      } catch (e) {
+        opgeslagenVolgorde = null;
+      }
+    }
+
+    if (Array.isArray(opgeslagenVolgorde) && opgeslagenVolgorde.length > 0) {
+      setAlleFotos(opgeslagenVolgorde.map((fid) => ({ id: fid })));
+    } else {
+      PhotoFactory.getPublished().then((lijst) => {
+        lijst.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setAlleFotos(lijst);
+      });
+    }
     PhotoTagFactory.getAll().then(setAlleTags);
   }, []);
 
