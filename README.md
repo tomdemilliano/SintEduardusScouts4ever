@@ -386,3 +386,18 @@ Drie aanpassingen op de eerdere leidingsploeg-functie:
 3. **Op het profiel van een lid** (`/entry/[id]`) staat nu een "👥
    Leiding"-lijstje met alle tak+werkingsjaar-combinaties waarin die
    persoon in de leidingsploeg zat (nieuwste eerst).
+
+## Kleine tijdlijn-verfijningen
+
+- **Ademruimte voor labels**: de tekst/emoji's van de rij-labels (🧭
+  Kentekens, ⚜️ Scouting, tak-namen, ledennamen…) plakten tegen de
+  linkerrand van elk kader. Er staat nu een kleine binnenmarge tussen.
+- **Geselecteerd jaar zichtbaar bij de slider**: onder de custom
+  jaren-slider staat nu, in het midden, groot en in kampvuur-oranje, het
+  jaar dat overeenkomt met de huidige scrollpositie — bijgewerkt zowel
+  tijdens het slepen aan de slider als bij rechtstreeks scrollen in een
+  van de kaders.
+- **Verticale jaarlijn**: datzelfde jaar wordt ook als een dunne,
+  halfdoorzichtige verticale lijn getoond in alle drie de kaders
+  (kentekens/mijlpalen, leidingsploegen, leden), zodat je in één oogopslag
+  ziet welk jaartal overeenkomt met wat er net zichtbaar is.
