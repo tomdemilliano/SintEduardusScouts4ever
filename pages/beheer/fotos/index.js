@@ -5,6 +5,7 @@ import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import RequireAuth from '../../../components/RequireAuth';
 import AdminSubNav from '../../../components/AdminSubNav';
 import MemberTagPicker from '../../../components/MemberTagPicker';
+import { rotateImageFile } from '../../../lib/utils';
 import PhotoTagSelector from '../../../components/PhotoTagSelector';
 import TagFilterPicker from '../../../components/TagFilterPicker';
 
@@ -213,7 +214,24 @@ function FotoBewerkKaart({ foto, onKlaar }) {
   const [beschrijving, setBeschrijving] = useState(foto.beschrijving || '');
   const [ledenTags, setLedenTags] = useState(foto.ledenTags || []);
   const [tagIds, setTagIds] = useState(foto.tagIds || []);
+  const [afbeeldingUrl, setAfbeeldingUrl] = useState(foto.afbeeldingUrl);
+  const [afbeeldingPath, setAfbeeldingPath] = useState(foto.afbeeldingPath);
+  const [roterenBezig, setRoterenBezig] = useState(false);
   const [bezig, setBezig] = useState(false);
+
+  const draaien = async () => {
+    setRoterenBezig(true);
+    try {
+      const bestand = await rotateImageFile(afbeeldingUrl, 90);
+      const upload = await PhotoFactory.replaceImage(foto.id, bestand, afbeeldingPath);
+      setAfbeeldingUrl(upload.url);
+      setAfbeeldingPath(upload.path);
+    } catch (err) {
+      alert('Draaien is mislukt, probeer opnieuw.');
+    } finally {
+      setRoterenBezig(false);
+    }
+  };
 
   const opslaan = async () => {
     setBezig(true);
@@ -245,7 +263,14 @@ function FotoBewerkKaart({ foto, onKlaar }) {
       }}
     >
       <div style={{ width: 220, flexShrink: 0 }}>
-        <ThumbOfFout url={foto.afbeeldingUrl} vierkant={false} />
+        <ThumbOfFout url={afbeeldingUrl} vierkant={false} />
+        <button
+          onClick={draaien}
+          disabled={roterenBezig}
+          style={{ ...smallBtn(colors.inkMuted), flex: 'none', width: '100%', marginTop: 6, padding: '6px 0' }}
+        >
+          {roterenBezig ? 'Bezig met draaien…' : '↻ 90° draaien'}
+        </button>
       </div>
       <div style={{ flex: 1, minWidth: 240, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', gap: 8 }}>
