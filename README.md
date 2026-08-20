@@ -328,3 +328,32 @@ tag-ID's), mee opgenomen in de publieke tag-update-regel.
   staan. Dat kost wat extra opslag, maar breekt niets — het is puur een
   opruim-detail dat de beheerder eventueel manueel kan doen via de
   Firebase-console.
+
+## Leidingsploegen per tak, per werkingsjaar
+
+Nieuw op de tijdlijn: de leidingsploeg per tak (Kapoenen, Welpen,
+Jonggivers…) per werkingsjaar. Dit is, net als de kentekens, **enkel door
+de beheerder** in te vullen — geen crowdsourced bewerking door bezoekers,
+want dit is officiële historiek.
+
+- **`/beheer/tijdlijn/takken`** — de lijst van takken/groepen beheren
+  (aanmaken/hernoemen/verwijderen). Dit is de gecontroleerde lijst
+  waaruit gekozen wordt bij het invullen van een leidingsploeg.
+- **`/beheer/tijdlijn/leiding`** — per combinatie tak + werkingsjaar de
+  leiding invullen (zoeken/selecteren uit de bestaande leden via
+  `MemberTagPicker`, of een vrije naam voor wie niet in het
+  vriendenboekje staat). Overzicht gegroepeerd per werkingsjaar, met
+  bewerken/verwijderen.
+
+**Weergave op de tijdlijn — bewust compact:** in plaats van de volledige
+leidingsploeg voortdurend zichtbaar te maken (wat al snel te druk zou
+worden bij meerdere takken over tientallen jaren), staat er één extra,
+smalle rij "👥 Leiding" met simpele bolletjes — één per werkingsjaar
+waarvoor er gegevens zijn. Een klik op zo'n bolletje opent een
+detailkaart (tussen de twee scroll-boxen, net als bij kentekens en
+mijlpalen) met alle takken van dat werkingsjaar en hun volledige
+leidingsploeg als naam-badges. Zo blijft de tijdlijn zelf overzichtelijk,
+terwijl de volledige info één klik verwijderd is.
+
+Nieuwe Firestore-collecties: `scoutTakken` en `leidingsploegen` (beide
+publiek leesbaar, enkel beheerder schrijft — zie `firestore.rules`).
