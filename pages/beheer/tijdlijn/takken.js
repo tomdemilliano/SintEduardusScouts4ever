@@ -77,6 +77,18 @@ function TakkenContent() {
     load();
   };
 
+  const verplaats = async (index, richting) => {
+    const andereIndex = index + richting;
+    if (andereIndex < 0 || andereIndex >= takken.length) return;
+    const a = takken[index];
+    const b = takken[andereIndex];
+    await Promise.all([
+      TakFactory.setVolgorde(a.id, andereIndex),
+      TakFactory.setVolgorde(b.id, index),
+    ]);
+    load();
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
@@ -96,7 +108,9 @@ function TakkenContent() {
         </h2>
         <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, marginBottom: 20 }}>
           De lijst van takken waaruit je kan kiezen bij het invullen van een
-          leidingsploeg (bv. Kapoenen, Welpen, Jonggivers, Givers, Jin…).
+          leidingsploeg (bv. Kapoenen, Welpen, Jonggivers, Givers, Jin…). De
+          volgorde hieronder (via de pijltjes) bepaalt ook de volgorde
+          waarin de takken op de tijdlijn getoond worden.
         </p>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
@@ -117,7 +131,7 @@ function TakkenContent() {
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met laden…</p>}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {takken.map((tak) => (
+          {takken.map((tak, index) => (
             <div
               key={tak.id}
               style={{
@@ -149,6 +163,24 @@ function TakkenContent() {
                 </>
               ) : (
                 <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <button
+                      onClick={() => verplaats(index, -1)}
+                      disabled={index === 0}
+                      style={pijlBtn(index === 0)}
+                      aria-label="Naar boven"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => verplaats(index, 1)}
+                      disabled={index === takken.length - 1}
+                      style={pijlBtn(index === takken.length - 1)}
+                      aria-label="Naar beneden"
+                    >
+                      ▼
+                    </button>
+                  </div>
                   <span style={{ flex: 1, fontFamily: fonts.body, fontSize: 14, color: colors.ink, fontWeight: 600 }}>
                     {tak.naam}
                   </span>
@@ -195,5 +227,19 @@ function btn(color) {
     fontWeight: 600,
     cursor: 'pointer',
     whiteSpace: 'nowrap',
+  };
+}
+
+function pijlBtn(disabled) {
+  return {
+    width: 24,
+    height: 18,
+    padding: 0,
+    borderRadius: 4,
+    border: `1px solid ${colors.line}`,
+    background: disabled ? colors.paper : colors.white,
+    color: disabled ? colors.line : colors.inkMuted,
+    fontSize: 10,
+    cursor: disabled ? 'default' : 'pointer',
   };
 }
