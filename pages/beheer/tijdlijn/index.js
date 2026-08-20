@@ -8,6 +8,8 @@ import AdminSubNav from '../../../components/AdminSubNav';
 const TABS = [
   { href: '/beheer/tijdlijn', label: '🚩 Mijlpalen', exact: true },
   { href: '/beheer/tijdlijn/kentekens', label: '🧭 Kentekens' },
+  { href: '/beheer/tijdlijn/takken', label: '👥 Takken' },
+  { href: '/beheer/tijdlijn/leiding', label: 'Leidingsploegen' },
 ];
 
 export default function MijlpalenPage() {
