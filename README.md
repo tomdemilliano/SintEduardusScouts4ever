@@ -280,3 +280,24 @@ afbeeldingen onder de 8MB; bestaande bestanden overschrijven of
 verwijderen kan enkel als beheerder. De echte inhoudelijke controle zit in
 de goedkeuringsstap (Firestore `status: 'pending'`), niet in de
 Storage-regel zelf.
+
+## Foto-tags (categorieën)
+
+Los van de vrije jaar/locatie/leden-tags is er een gecontroleerde lijst
+categorieën ("tags"), bv. "Kampvuur", "Groepsfoto", "Zwemmen":
+
+- **Aanmaken**: enkel de beheerder, via `/beheer/fotos/tags` — dit
+  voorkomt een wildgroei aan bijna-identieke tags.
+- **Toekennen**: zowel beheerder als bezoeker mogen bestaande tags aan een
+  foto koppelen (`components/PhotoTagSelector.js`), net als de andere
+  foto-tags, zonder goedkeuringsstap.
+- **Filteren**: `components/TagFilterPicker.js` is een compacte,
+  uitklapbare multi-select (één knopje met een aantal-badge) — neemt zo
+  weinig mogelijk ruimte in, ook op mobiel, ongeacht hoeveel tags er zijn.
+  Staat op zowel `/fotos` (publiek) als `/beheer/fotos` (beheer), en werkt
+  samen met de bestaande filters (jaar, locatie, "nog niet getagd") via
+  EN-logica: hoe meer filters actief, hoe specifieker het resultaat.
+
+Nieuwe Firestore-collectie: `photoTags` (publiek leesbaar, enkel
+beheerder schrijft). Foto's kregen er een `tagIds`-veld bij (array van
+tag-ID's), mee opgenomen in de publieke tag-update-regel.
