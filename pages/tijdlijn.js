@@ -3,8 +3,9 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { EntryFactory, KentekenFactory, MijlpaalFactory, TakFactory, LeidingFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
-import { parsePeriodRange, werkingsjaarLabel } from '../lib/utils';
+import { parsePeriodRange, werkingsjaarLabel, huidigWerkingsjaarStart } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
+import MemberTagPicker from '../components/MemberTagPicker';
 
 const NAAM_KOLOM = 130;
 const PX_PER_JAAR = 22;
@@ -19,7 +20,15 @@ export default function TijdlijnPage() {
   const [leidingLijst, setLeidingLijst] = useState([]);
   const [geselecteerdeMijlpaal, setGeselecteerdeMijlpaal] = useState(null);
   const [geselecteerdKenteken, setGeselecteerdKenteken] = useState(null);
-  const [geselecteerdLeidingJaar, setGeselecteerdLeidingJaar] = useState(null);
+  const [geselecteerdeLeiding, setGeselecteerdeLeiding] = useState(null); // { takId, werkingsjaarStart }
+  const [leidingBewerkModus, setLeidingBewerkModus] = useState(false);
+  const [leidingBewerkLeden, setLeidingBewerkLeden] = useState([]);
+  const [leidingOpslaanBezig, setLeidingOpslaanBezig] = useState(false);
+  const [toevoegFormOpen, setToevoegFormOpen] = useState(false);
+  const [nieuwTakId, setNieuwTakId] = useState('');
+  const [nieuwJaar, setNieuwJaar] = useState(String(huidigWerkingsjaarStart()));
+  const [nieuwLeden, setNieuwLeden] = useState([]);
+  const [nieuwOpslaanBezig, setNieuwOpslaanBezig] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const eindJaar = new Date().getFullYear();
@@ -27,15 +36,16 @@ export default function TijdlijnPage() {
   const breedteJaren = totaalJaren * PX_PER_JAAR;
   const totaleBreedte = NAAM_KOLOM + breedteJaren;
 
-  // Twee gesynchroniseerde scroll-boxen (boven: as/kentekens/mijlpalen,
-  // onder: leden) zodat het mijlpaal/kenteken-detail daartussen kan staan
-  // in plaats van helemaal onderaan, na alle leden.
+  // Drie gesynchroniseerde scroll-boxen (jaren-as/kentekens/mijlpalen,
+  // leidingsploegen per tak, leden) zodat detailkaarten er telkens
+  // tussenin kunnen staan i.p.v. helemaal onderaan.
   const scrollTopRef = useRef(null);
+  const scrollLeidingRef = useRef(null);
   const scrollBottomRef = useRef(null);
   const syncBezig = useRef(false);
   const [sliderPercent, setSliderPercent] = useState(0);
 
-  useEffect(() => {
+  const load = () => {
     Promise.all([
       EntryFactory.getPublished(),
       KentekenFactory.getAll(),
@@ -56,16 +66,20 @@ export default function TijdlijnPage() {
       setMijlpalen(mijlpaalLijst);
       setTakken(takLijst);
       setLeidingLijst(leidingData.filter((l) => (l.leden || []).length > 0));
+      if (!nieuwTakId && takLijst.length > 0) setNieuwTakId(takLijst[0].id);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pixelFor = (jaar) => NAAM_KOLOM + (jaar - STARTJAAR) * PX_PER_JAAR;
 
   const mijlpalenScouting = mijlpalen.filter((m) => m.type === 'scouting');
   const mijlpalenGroep = mijlpalen.filter((m) => m.type !== 'scouting');
-
-  const leidingJaren = [...new Set(leidingLijst.map((l) => l.werkingsjaarStart))].sort((a, b) => a - b);
 
   const tickJaren = () => {
     const ticks = [];
@@ -74,36 +88,82 @@ export default function TijdlijnPage() {
     return ticks;
   };
 
-  const syncNaar = (bron, doel) => {
-    if (!bron || !doel) return;
+  const syncNaar = (bron, doelen) => {
+    if (!bron) return;
     const max = bron.scrollWidth - bron.clientWidth;
-    doel.scrollLeft = bron.scrollLeft;
+    doelen.forEach((doel) => {
+      if (doel) doel.scrollLeft = bron.scrollLeft;
+    });
     setSliderPercent(max > 0 ? (bron.scrollLeft / max) * 100 : 0);
   };
 
-  const handleScrollTop = () => {
+  const maakScrollHandler = (bronRef, doelRefs) => () => {
     if (syncBezig.current) return;
     syncBezig.current = true;
-    syncNaar(scrollTopRef.current, scrollBottomRef.current);
+    syncNaar(bronRef.current, doelRefs.map((r) => r.current));
     syncBezig.current = false;
   };
 
-  const handleScrollBottom = () => {
-    if (syncBezig.current) return;
-    syncBezig.current = true;
-    syncNaar(scrollBottomRef.current, scrollTopRef.current);
-    syncBezig.current = false;
-  };
+  const handleScrollTop = maakScrollHandler(scrollTopRef, [scrollLeidingRef, scrollBottomRef]);
+  const handleScrollLeiding = maakScrollHandler(scrollLeidingRef, [scrollTopRef, scrollBottomRef]);
+  const handleScrollBottom = maakScrollHandler(scrollBottomRef, [scrollTopRef, scrollLeidingRef]);
 
   const handleSliderChange = (e) => {
     const percent = Number(e.target.value);
     setSliderPercent(percent);
-    [scrollTopRef.current, scrollBottomRef.current].forEach((el) => {
+    [scrollTopRef.current, scrollLeidingRef.current, scrollBottomRef.current].forEach((el) => {
       if (!el) return;
       const max = el.scrollWidth - el.clientWidth;
       el.scrollLeft = (percent / 100) * max;
     });
   };
+
+  const openLeidingDetail = (takId, werkingsjaarStart) => {
+    setGeselecteerdeLeiding({ takId, werkingsjaarStart });
+    setLeidingBewerkModus(false);
+  };
+
+  const startLeidingBewerken = () => {
+    const item = leidingLijst.find(
+      (l) => l.takId === geselecteerdeLeiding.takId && l.werkingsjaarStart === geselecteerdeLeiding.werkingsjaarStart
+    );
+    setLeidingBewerkLeden(item?.leden || []);
+    setLeidingBewerkModus(true);
+  };
+
+  const leidingOpslaan = async () => {
+    setLeidingOpslaanBezig(true);
+    try {
+      await LeidingFactory.set(geselecteerdeLeiding.takId, geselecteerdeLeiding.werkingsjaarStart, leidingBewerkLeden);
+      load();
+      setLeidingBewerkModus(false);
+    } finally {
+      setLeidingOpslaanBezig(false);
+    }
+  };
+
+  const nieuweLeidingOpslaan = async () => {
+    const jaarNum = parseInt(nieuwJaar, 10);
+    if (!nieuwTakId || !jaarNum) return;
+    setNieuwOpslaanBezig(true);
+    try {
+      await LeidingFactory.set(nieuwTakId, jaarNum, nieuwLeden);
+      load();
+      setNieuwLeden([]);
+      setToevoegFormOpen(false);
+    } finally {
+      setNieuwOpslaanBezig(false);
+    }
+  };
+
+  const geselecteerdeLeidingItem = geselecteerdeLeiding
+    ? leidingLijst.find(
+        (l) => l.takId === geselecteerdeLeiding.takId && l.werkingsjaarStart === geselecteerdeLeiding.werkingsjaarStart
+      )
+    : null;
+  const geselecteerdeLeidingTakNaam = geselecteerdeLeiding
+    ? takken.find((t) => t.id === geselecteerdeLeiding.takId)?.naam || '(onbekende tak)'
+    : '';
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
@@ -228,33 +288,6 @@ export default function TijdlijnPage() {
                   </div>
                 )}
 
-                {/* Leidingsploegen: één marker per werkingsjaar met gegevens, details op klik */}
-                {leidingJaren.length > 0 && (
-                  <div style={{ position: 'relative', height: 30, marginBottom: 8 }}>
-                    <RijLabel>👥 Leiding</RijLabel>
-                    {leidingJaren.map((jaar) => (
-                      <button
-                        key={jaar}
-                        onClick={() => setGeselecteerdLeidingJaar(jaar)}
-                        title={`Leidingsploegen ${werkingsjaarLabel(jaar)}`}
-                        style={{
-                          position: 'absolute',
-                          left: pixelFor(jaar),
-                          top: 3,
-                          transform: 'translateX(-50%)',
-                          width: 16,
-                          height: 16,
-                          borderRadius: '50%',
-                          background: colors.forest,
-                          border: `2px solid ${colors.paperCard}`,
-                          cursor: 'pointer',
-                          padding: 0,
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
                 {/* Mijlpalen — scouting (bewegingsbreed) */}
                 {mijlpalenScouting.length > 0 && (
                   <div style={{ position: 'relative', height: 34 }}>
@@ -313,7 +346,7 @@ export default function TijdlijnPage() {
               </div>
             </div>
 
-            {/* Detail: geselecteerd kenteken of mijlpaal — tussen de twee boxen, altijd meteen zichtbaar */}
+            {/* Detail: geselecteerd kenteken of mijlpaal */}
             {geselecteerdKenteken && (
               <div
                 style={{
@@ -410,8 +443,119 @@ export default function TijdlijnPage() {
               </div>
             )}
 
-            {/* Detail: geselecteerd werkingsjaar leiding — alle takken met hun ploeg */}
-            {geselecteerdLeidingJaar && (
+            {/* Apart vak: leidingsploegen per tak */}
+            {takken.length > 0 && (
+              <div
+                style={{
+                  marginTop: 12,
+                  background: colors.paperCard,
+                  border: `1px solid ${colors.line}`,
+                  borderRadius: radius.card,
+                  padding: '14px 0',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '0 16px 12px' }}>
+                  <div style={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 700, color: colors.ink }}>
+                    Leidingsploegen per tak
+                  </div>
+                  <button
+                    onClick={() => setToevoegFormOpen((v) => !v)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: radius.badge,
+                      border: 'none',
+                      background: colors.forest,
+                      color: colors.white,
+                      fontFamily: fonts.body,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {toevoegFormOpen ? 'Sluiten' : '+ Leidingsploeg toevoegen'}
+                  </button>
+                </div>
+
+                {toevoegFormOpen && (
+                  <div style={{ margin: '0 16px 14px', padding: '14px 16px', background: colors.campfireLight, border: `1.5px dashed ${colors.campfire}`, borderRadius: radius.card, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 140 }}>
+                        <label style={miniLabelStyle}>Tak</label>
+                        <select value={nieuwTakId} onChange={(e) => setNieuwTakId(e.target.value)} style={inputStyle}>
+                          {takken.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.naam}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={miniLabelStyle}>Startjaar werkingsjaar</label>
+                        <input type="number" min={STARTJAAR} value={nieuwJaar} onChange={(e) => setNieuwJaar(e.target.value)} style={{ ...inputStyle, width: 120 }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={miniLabelStyle}>Leiding</label>
+                      <MemberTagPicker value={nieuwLeden} onChange={setNieuwLeden} />
+                    </div>
+                    <button
+                      onClick={nieuweLeidingOpslaan}
+                      disabled={nieuwOpslaanBezig}
+                      style={{
+                        alignSelf: 'flex-start',
+                        padding: '8px 18px',
+                        borderRadius: radius.badge,
+                        border: 'none',
+                        background: colors.forest,
+                        color: colors.white,
+                        fontFamily: fonts.body,
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {nieuwOpslaanBezig ? 'Bezig…' : 'Opslaan'}
+                    </button>
+                  </div>
+                )}
+
+                <div ref={scrollLeidingRef} onScroll={handleScrollLeiding} style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+                  <div style={{ width: totaleBreedte }}>
+                    {takken.map((tak) => {
+                      const items = leidingLijst.filter((l) => l.takId === tak.id);
+                      return (
+                        <div key={tak.id} style={{ position: 'relative', height: 30 }}>
+                          <RijLabel>{tak.naam}</RijLabel>
+                          {items.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => openLeidingDetail(tak.id, item.werkingsjaarStart)}
+                              title={`${tak.naam} ${werkingsjaarLabel(item.werkingsjaarStart)}`}
+                              style={{
+                                position: 'absolute',
+                                left: pixelFor(item.werkingsjaarStart),
+                                top: 7,
+                                transform: 'translateX(-50%)',
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                background: colors.forest,
+                                border: `2px solid ${colors.paperCard}`,
+                                cursor: 'pointer',
+                                padding: 0,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Detail: geselecteerde leidingsploeg (tak + jaar), met bewerk-gate */}
+            {geselecteerdeLeiding && (
               <div
                 style={{
                   marginTop: 12,
@@ -421,12 +565,17 @@ export default function TijdlijnPage() {
                   padding: '20px 22px',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                  <div style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 700, color: colors.ink }}>
-                    👥 Leiding {werkingsjaarLabel(geselecteerdLeidingJaar)}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontFamily: fonts.display, fontSize: 20, fontWeight: 700, color: colors.ink }}>
+                      {geselecteerdeLeidingTakNaam}
+                    </div>
+                    <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>
+                      {werkingsjaarLabel(geselecteerdeLeiding.werkingsjaarStart)}
+                    </div>
                   </div>
                   <button
-                    onClick={() => setGeselecteerdLeidingJaar(null)}
+                    onClick={() => setGeselecteerdeLeiding(null)}
                     style={{ background: 'none', border: 'none', fontSize: 18, color: colors.inkMuted, cursor: 'pointer' }}
                     aria-label="Sluiten"
                   >
@@ -434,43 +583,95 @@ export default function TijdlijnPage() {
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {leidingLijst
-                    .filter((l) => l.werkingsjaarStart === geselecteerdLeidingJaar)
-                    .map((item) => {
-                      const takNaam = takken.find((t) => t.id === item.takId)?.naam || '(onbekende tak)';
-                      return (
-                        <div key={item.id}>
-                          <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.forest, marginBottom: 4 }}>
-                            {takNaam}
-                          </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                            {(item.leden || []).map((lid, i) => (
-                              <span
-                                key={i}
-                                style={{
-                                  fontFamily: fonts.display,
-                                  fontSize: 14,
-                                  fontWeight: 600,
-                                  color: colors.ink,
-                                  background: colors.white,
-                                  border: `1px solid ${colors.line}`,
-                                  borderRadius: radius.badge,
-                                  padding: '4px 12px',
-                                }}
-                              >
-                                {lid.naam}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
+                {!leidingBewerkModus ? (
+                  <>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                      {(geselecteerdeLeidingItem?.leden || []).length > 0 ? (
+                        geselecteerdeLeidingItem.leden.map((lid, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              fontFamily: fonts.display,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: colors.ink,
+                              background: colors.white,
+                              border: `1px solid ${colors.line}`,
+                              borderRadius: radius.badge,
+                              padding: '4px 12px',
+                            }}
+                          >
+                            {lid.naam}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>Nog niemand ingevuld.</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={startLeidingBewerken}
+                      style={{
+                        padding: '8px 18px',
+                        borderRadius: radius.badge,
+                        border: 'none',
+                        background: colors.forest,
+                        color: colors.white,
+                        fontFamily: fonts.body,
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✏️ Bewerken
+                    </button>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <MemberTagPicker value={leidingBewerkLeden} onChange={setLeidingBewerkLeden} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={leidingOpslaan}
+                        disabled={leidingOpslaanBezig}
+                        style={{
+                          padding: '9px 20px',
+                          borderRadius: radius.badge,
+                          border: 'none',
+                          background: leidingOpslaanBezig ? colors.inkMuted : colors.forest,
+                          color: colors.white,
+                          fontFamily: fonts.body,
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: leidingOpslaanBezig ? 'default' : 'pointer',
+                        }}
+                      >
+                        {leidingOpslaanBezig ? 'Bezig…' : 'Opslaan'}
+                      </button>
+                      <button
+                        onClick={() => setLeidingBewerkModus(false)}
+                        style={{
+                          padding: '9px 20px',
+                          borderRadius: radius.badge,
+                          border: `1px solid ${colors.line}`,
+                          background: 'transparent',
+                          color: colors.inkMuted,
+                          fontFamily: fonts.body,
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Annuleren
+                      </button>
+                    </div>
+                    <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: 0 }}>
+                      Iedereen kan dit aanvullen of corrigeren — help mee de geschiedenis reconstrueren.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Box 2: leden */}
+            {/* Box: leden */}
             <div
               ref={scrollBottomRef}
               onScroll={handleScrollBottom}
@@ -654,3 +855,24 @@ function RijLabel({ children }) {
     </div>
   );
 }
+
+const inputStyle = {
+  width: '100%',
+  padding: '8px 10px',
+  borderRadius: radius.input,
+  border: `1px solid ${colors.line}`,
+  background: colors.white,
+  fontFamily: fonts.body,
+  fontSize: 13,
+  color: colors.ink,
+  boxSizing: 'border-box',
+};
+
+const miniLabelStyle = {
+  display: 'block',
+  fontFamily: fonts.body,
+  fontSize: 11,
+  fontWeight: 600,
+  color: colors.inkMuted,
+  marginBottom: 3,
+};
