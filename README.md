@@ -417,3 +417,21 @@ is de afbeelding dan "same-origin", en kan `rotateImageFile` (in
 `lib/utils.js`) ze gewoon inlezen. De route accepteert enkel URL's van
 `firebasestorage.googleapis.com`, zodat ze niet als open proxy voor
 andere sites misbruikt kan worden.
+
+## Foto's: categorieën altijd zichtbaar (responsief)
+
+Op `/fotos` staat de tag-filter niet langer standaard achter het
+uitklap-knopje verstopt:
+
+- **Groter scherm (breder dan 680px)**: een vaste kolom links met alle
+  categorieën in één oogopslag, elk aanklikbaar (meerdere tegelijk
+  mogelijk). Geen extra klik nodig om te zien wat er beschikbaar is.
+- **Mobiel (smaller dan 680px)**: de kolom zou te veel ruimte innemen,
+  dus daar valt het automatisch terug op het bestaande, compacte
+  `TagFilterPicker`-knopje bij de andere filters.
+
+Beide bedienen dezelfde `tagFilter`-state, dus de knop en de kolom geven
+altijd hetzelfde resultaat — het is puur een kwestie van welke van de
+twee zichtbaar is, geregeld via een CSS media query (`@media (max-width:
+680px)` in `pages/fotos.js`) in plaats van JavaScript-schermbreedte-
+detectie, om een hydration-mismatch tussen server en browser te vermijden.
