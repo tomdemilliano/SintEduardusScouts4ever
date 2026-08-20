@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory, KentekenFactory, MijlpaalFactory } from '../lib/dbSchema';
+import { EntryFactory, KentekenFactory, MijlpaalFactory, TakFactory, LeidingFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import { parsePeriodRange, werkingsjaarLabel } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
@@ -15,8 +15,11 @@ export default function TijdlijnPage() {
   const [zonderJaar, setZonderJaar] = useState([]);
   const [kentekens, setKentekens] = useState([]);
   const [mijlpalen, setMijlpalen] = useState([]);
+  const [takken, setTakken] = useState([]);
+  const [leidingLijst, setLeidingLijst] = useState([]);
   const [geselecteerdeMijlpaal, setGeselecteerdeMijlpaal] = useState(null);
   const [geselecteerdKenteken, setGeselecteerdKenteken] = useState(null);
+  const [geselecteerdLeidingJaar, setGeselecteerdLeidingJaar] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const eindJaar = new Date().getFullYear();
@@ -33,28 +36,36 @@ export default function TijdlijnPage() {
   const [sliderPercent, setSliderPercent] = useState(0);
 
   useEffect(() => {
-    Promise.all([EntryFactory.getPublished(), KentekenFactory.getAll(), MijlpaalFactory.getPublished()]).then(
-      ([entries, kentekenLijst, mijlpaalLijst]) => {
-        const metJaar = [];
-        const geen = [];
-        entries.forEach((e) => {
-          const { start, end } = parsePeriodRange(e.periode);
-          if (start) metJaar.push({ ...e, start, end });
-          else geen.push(e);
-        });
-        setRijen([...metJaar].sort((a, b) => a.start - b.start || a.naam.localeCompare(b.naam)));
-        setZonderJaar(geen);
-        setKentekens(kentekenLijst.filter((k) => k.afbeeldingUrl || k.jaarleuze));
-        setMijlpalen(mijlpaalLijst);
-        setLoading(false);
-      }
-    );
+    Promise.all([
+      EntryFactory.getPublished(),
+      KentekenFactory.getAll(),
+      MijlpaalFactory.getPublished(),
+      TakFactory.getAll(),
+      LeidingFactory.getAll(),
+    ]).then(([entries, kentekenLijst, mijlpaalLijst, takLijst, leidingData]) => {
+      const metJaar = [];
+      const geen = [];
+      entries.forEach((e) => {
+        const { start, end } = parsePeriodRange(e.periode);
+        if (start) metJaar.push({ ...e, start, end });
+        else geen.push(e);
+      });
+      setRijen([...metJaar].sort((a, b) => a.start - b.start || a.naam.localeCompare(b.naam)));
+      setZonderJaar(geen);
+      setKentekens(kentekenLijst.filter((k) => k.afbeeldingUrl || k.jaarleuze));
+      setMijlpalen(mijlpaalLijst);
+      setTakken(takLijst);
+      setLeidingLijst(leidingData.filter((l) => (l.leden || []).length > 0));
+      setLoading(false);
+    });
   }, []);
 
   const pixelFor = (jaar) => NAAM_KOLOM + (jaar - STARTJAAR) * PX_PER_JAAR;
 
   const mijlpalenScouting = mijlpalen.filter((m) => m.type === 'scouting');
   const mijlpalenGroep = mijlpalen.filter((m) => m.type !== 'scouting');
+
+  const leidingJaren = [...new Set(leidingLijst.map((l) => l.werkingsjaarStart))].sort((a, b) => a - b);
 
   const tickJaren = () => {
     const ticks = [];
@@ -109,7 +120,7 @@ export default function TijdlijnPage() {
             Doorheen de jaren
           </h1>
           <p style={{ fontFamily: fonts.body, fontSize: 15, color: colors.inkMuted, margin: 0 }}>
-            Leden, jaarkentekens en mijlpalen sinds {STARTJAAR}
+            Leden, jaarkentekens, leidingsploegen en mijlpalen sinds {STARTJAAR}
           </p>
           <Link
             href="/mijlpaal-toevoegen"
@@ -213,6 +224,33 @@ export default function TijdlijnPage() {
                           <img src={k.afbeeldingUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         )}
                       </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Leidingsploegen: één marker per werkingsjaar met gegevens, details op klik */}
+                {leidingJaren.length > 0 && (
+                  <div style={{ position: 'relative', height: 30, marginBottom: 8 }}>
+                    <RijLabel>👥 Leiding</RijLabel>
+                    {leidingJaren.map((jaar) => (
+                      <button
+                        key={jaar}
+                        onClick={() => setGeselecteerdLeidingJaar(jaar)}
+                        title={`Leidingsploegen ${werkingsjaarLabel(jaar)}`}
+                        style={{
+                          position: 'absolute',
+                          left: pixelFor(jaar),
+                          top: 3,
+                          transform: 'translateX(-50%)',
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          background: colors.forest,
+                          border: `2px solid ${colors.paperCard}`,
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      />
                     ))}
                   </div>
                 )}
@@ -369,6 +407,66 @@ export default function TijdlijnPage() {
                 >
                   ✕
                 </button>
+              </div>
+            )}
+
+            {/* Detail: geselecteerd werkingsjaar leiding — alle takken met hun ploeg */}
+            {geselecteerdLeidingJaar && (
+              <div
+                style={{
+                  marginTop: 12,
+                  background: colors.paperCard,
+                  border: `1.5px solid ${colors.forest}`,
+                  borderRadius: radius.card,
+                  padding: '20px 22px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                  <div style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 700, color: colors.ink }}>
+                    👥 Leiding {werkingsjaarLabel(geselecteerdLeidingJaar)}
+                  </div>
+                  <button
+                    onClick={() => setGeselecteerdLeidingJaar(null)}
+                    style={{ background: 'none', border: 'none', fontSize: 18, color: colors.inkMuted, cursor: 'pointer' }}
+                    aria-label="Sluiten"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {leidingLijst
+                    .filter((l) => l.werkingsjaarStart === geselecteerdLeidingJaar)
+                    .map((item) => {
+                      const takNaam = takken.find((t) => t.id === item.takId)?.naam || '(onbekende tak)';
+                      return (
+                        <div key={item.id}>
+                          <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.forest, marginBottom: 4 }}>
+                            {takNaam}
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {(item.leden || []).map((lid, i) => (
+                              <span
+                                key={i}
+                                style={{
+                                  fontFamily: fonts.display,
+                                  fontSize: 14,
+                                  fontWeight: 600,
+                                  color: colors.ink,
+                                  background: colors.white,
+                                  border: `1px solid ${colors.line}`,
+                                  borderRadius: radius.badge,
+                                  padding: '4px 12px',
+                                }}
+                              >
+                                {lid.naam}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
             )}
 
