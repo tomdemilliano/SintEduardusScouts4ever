@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { PhotoFactory } from '../../../lib/dbSchema';
+import { PhotoFactory, PhotoTagFactory } from '../../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import RequireAuth from '../../../components/RequireAuth';
 import AdminSubNav from '../../../components/AdminSubNav';
 import MemberTagPicker from '../../../components/MemberTagPicker';
+import PhotoTagSelector from '../../../components/PhotoTagSelector';
+import TagFilterPicker from '../../../components/TagFilterPicker';
 
 const TABS = [
   { href: '/beheer/fotos', label: 'Overzicht', exact: true },
-  { href: '/beheer/fotos/toevoegen', label: '+ Foto\'s toevoegen' },
+  { href: '/beheer/fotos/toevoegen', label: "+ Foto's toevoegen" },
+  { href: '/beheer/fotos/tags', label: 'Tags' },
 ];
 
 export default function FotosBeheerPage() {
@@ -21,12 +24,16 @@ export default function FotosBeheerPage() {
 
 function FotosBeheerContent() {
   const [fotos, setFotos] = useState([]);
+  const [alleTags, setAlleTags] = useState([]);
+  const [tagFilter, setTagFilter] = useState([]);
   const [loading, setLoading] = useState(true);
   const [bewerkId, setBewerkId] = useState(null);
 
   const load = async () => {
     setLoading(true);
-    setFotos(await PhotoFactory.getAllAdmin());
+    const [f, t] = await Promise.all([PhotoFactory.getAllAdmin(), PhotoTagFactory.getAll()]);
+    setFotos(f);
+    setAlleTags(t);
     setLoading(false);
   };
 
@@ -52,7 +59,10 @@ function FotosBeheerContent() {
 
   const pending = fotos.filter((f) => f.status === 'pending');
   const verwijderVerzoeken = fotos.filter((f) => f.status === 'published' && f.verwijderVerzoek);
-  const gepubliceerd = fotos.filter((f) => f.status === 'published' && !f.verwijderVerzoek);
+  const gepubliceerdAlles = fotos.filter((f) => f.status === 'published' && !f.verwijderVerzoek);
+  const gepubliceerd = gepubliceerdAlles.filter(
+    (f) => tagFilter.length === 0 || tagFilter.every((t) => (f.tagIds || []).includes(t))
+  );
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
@@ -125,7 +135,10 @@ function FotosBeheerContent() {
         )}
 
         {/* Gepubliceerd */}
-        <SectieTitel>Gepubliceerd ({gepubliceerd.length})</SectieTitel>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+          <SectieTitel>Gepubliceerd ({gepubliceerd.length}{tagFilter.length > 0 ? ` van ${gepubliceerdAlles.length}` : ''})</SectieTitel>
+          <TagFilterPicker alleTags={alleTags} geselecteerd={tagFilter} onChange={setTagFilter} />
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
           {gepubliceerd.map((foto) =>
             bewerkId === foto.id ? (
@@ -137,6 +150,14 @@ function FotosBeheerContent() {
                   {[foto.jaar, foto.locatie].filter(Boolean).join(' · ')}
                   {foto.ledenTags?.length > 0 && (
                     <div style={{ marginTop: 2 }}>{foto.ledenTags.map((t) => t.naam).join(', ')}</div>
+                  )}
+                  {foto.tagIds?.length > 0 && (
+                    <div style={{ marginTop: 2, color: colors.forest, fontWeight: 600 }}>
+                      {foto.tagIds
+                        .map((id) => alleTags.find((t) => t.id === id)?.naam)
+                        .filter(Boolean)
+                        .join(', ')}
+                    </div>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 4, padding: '0 8px 8px' }}>
@@ -152,7 +173,10 @@ function FotosBeheerContent() {
           )}
         </div>
 
-        {!loading && gepubliceerd.length === 0 && (
+        {!loading && gepubliceerd.length === 0 && gepubliceerdAlles.length > 0 && (
+          <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Geen foto's die aan deze tag-filter voldoen.</p>
+        )}
+        {!loading && gepubliceerdAlles.length === 0 && (
           <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Nog geen foto's gepubliceerd.</p>
         )}
       </div>
@@ -188,6 +212,7 @@ function FotoBewerkKaart({ foto, onKlaar }) {
   const [locatie, setLocatie] = useState(foto.locatie || '');
   const [beschrijving, setBeschrijving] = useState(foto.beschrijving || '');
   const [ledenTags, setLedenTags] = useState(foto.ledenTags || []);
+  const [tagIds, setTagIds] = useState(foto.tagIds || []);
   const [bezig, setBezig] = useState(false);
 
   const opslaan = async () => {
@@ -198,6 +223,7 @@ function FotoBewerkKaart({ foto, onKlaar }) {
         locatie: locatie.trim(),
         beschrijving: beschrijving.trim(),
         ledenTags,
+        tagIds,
       });
       onKlaar();
     } finally {
@@ -228,6 +254,7 @@ function FotoBewerkKaart({ foto, onKlaar }) {
         </div>
         <textarea value={beschrijving} onChange={(e) => setBeschrijving(e.target.value)} placeholder="Extra info (optioneel)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
         <MemberTagPicker value={ledenTags} onChange={setLedenTags} />
+        <PhotoTagSelector value={tagIds} onChange={setTagIds} />
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={opslaan} disabled={bezig} style={{ ...smallBtn(colors.forest), flex: 'none', padding: '8px 18px' }}>
             {bezig ? 'Bezig…' : 'Opslaan'}
