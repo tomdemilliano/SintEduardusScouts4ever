@@ -59,20 +59,6 @@ export default function VriendenboekjePage() {
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 20px 100px' }}>
         <PublicNav />
         <div style={{ textAlign: 'center', marginBottom: 24, marginTop: 28 }}>
-          <div
-            style={{
-              display: 'inline-block',
-              fontFamily: fonts.body,
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: colors.campfire,
-              marginBottom: 10,
-            }}
-          >
-            Reünie oud-scouts
-          </div>
           <h1
             style={{
               fontFamily: fonts.display,
