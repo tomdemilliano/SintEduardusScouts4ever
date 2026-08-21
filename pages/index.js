@@ -39,6 +39,27 @@ export default function LandingPage() {
         </p>
 
         <NavButtons style={{ marginTop: 36, paddingTop: 0 }} />
+
+        <div
+          style={{
+            marginTop: 40,
+            background: colors.forestDark,
+            borderRadius: 16,
+            padding: '22px 26px',
+            maxWidth: 520,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.white, lineHeight: 1.6, margin: 0 }}>
+            🏕️ Niet van Sint-Eduardusscouts, maar wil je ook zo'n website voor
+            jouw eigen groep?{' '}
+            <Link href="/contact" style={{ color: '#F4B860', fontWeight: 700, textDecoration: 'underline' }}>
+              Neem contact op met de websitebeheerder
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );
