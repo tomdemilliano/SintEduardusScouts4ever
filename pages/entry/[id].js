@@ -18,7 +18,7 @@ export default function EntryDetailPage() {
   useEffect(() => {
     if (!id) return;
     EntryFactory.getById(id).then((e) => {
-      const geldig = e && e.status === 'published';
+      const geldig = e && (e.status === 'published' || e.status === 'stub');
       setEntry(geldig ? e : null);
       setLoading(false);
       if (geldig) {
@@ -83,10 +83,21 @@ export default function EntryDetailPage() {
               <h1 style={{ fontFamily: fonts.display, fontSize: 34, fontWeight: 700, color: colors.ink, margin: 0 }}>
                 {entry.naam}
               </h1>
-              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, margin: '6px 0 0' }}>
-                {entry.geboortejaar && `°${entry.geboortejaar} · `}
-                Lid van {entry.periode || '—'}
-              </p>
+              {(entry.geboortejaar || entry.periode) && (
+                <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, margin: '6px 0 0' }}>
+                  {entry.geboortejaar && `°${entry.geboortejaar} · `}
+                  {entry.periode && `Lid van ${entry.periode}`}
+                </p>
+              )}
+              {entry.status === 'stub' && (
+                <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.campfire, margin: '6px 0 0' }}>
+                  Nog geen eigen vriendenboekje-fiche —{' '}
+                  <Link href="/toevoegen" style={{ color: colors.campfire, fontWeight: 600 }}>
+                    ben jij dit, of ken je deze persoon? Vul 'm zelf aan
+                  </Link>
+                  .
+                </p>
+              )}
             </div>
             {entry.totemnaam && (
               <div
