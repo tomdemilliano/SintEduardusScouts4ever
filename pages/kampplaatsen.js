@@ -172,9 +172,11 @@ export default function KampplaatsenPage() {
         )}
       </div>
 
-      <style jsx>{`
-        .vb-kampplek-tegel {
+      <style jsx global>{`
+        .vb-kampplek-hart {
           position: relative;
+          display: inline-flex;
+          align-items: center;
         }
         .vb-kampplek-tooltip {
           display: none;
@@ -193,7 +195,7 @@ export default function KampplaatsenPage() {
           white-space: nowrap;
           box-shadow: 0 4px 12px rgba(44, 36, 25, 0.25);
         }
-        .vb-kampplek-tegel:hover .vb-kampplek-tooltip {
+        .vb-kampplek-hart:hover .vb-kampplek-tooltip {
           display: block;
         }
       `}</style>
@@ -223,7 +225,6 @@ function KampplaatsTegel({ naam, type, count, namen, beschrijving, actief, onCli
   const kleur = type === 'extra' ? colors.forest : colors.campfire;
   return (
     <button
-      className="vb-kampplek-tegel"
       onClick={onClick}
       title={beschrijving || undefined}
       style={{
@@ -241,19 +242,20 @@ function KampplaatsTegel({ naam, type, count, namen, beschrijving, actief, onCli
         {naam}
       </span>
       {type === 'like' ? (
-        <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, color: actief ? colors.white : colors.campfire }}>
-          ❤️ {count}
+        <span className="vb-kampplek-hart">
+          <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, color: actief ? colors.white : colors.campfire }}>
+            ❤️ {count}
+          </span>
+          {namen && namen.length > 0 && (
+            <div className="vb-kampplek-tooltip">
+              {namen.map((n, i) => (
+                <div key={i}>{n}</div>
+              ))}
+            </div>
+          )}
         </span>
       ) : (
         <span style={{ fontSize: 13 }}>📍</span>
-      )}
-
-      {type === 'like' && namen && namen.length > 0 && (
-        <div className="vb-kampplek-tooltip">
-          {namen.map((n, i) => (
-            <div key={i}>{n}</div>
-          ))}
-        </div>
       )}
     </button>
   );
