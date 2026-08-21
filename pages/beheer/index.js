@@ -40,7 +40,8 @@ function DashboardContent() {
       ContactFactory.getAll(),
     ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links, fotos, contactBerichten]) => {
       const gepubliceerdeEntries = entries.filter((e) => e.status === 'published');
-      const conceptEntries = entries.filter((e) => e.status !== 'published');
+      const conceptEntries = entries.filter((e) => e.status === 'draft');
+      const stubEntries = entries.filter((e) => e.status === 'stub');
 
       const gekoppeldeLocaties = new Set(locaties.map((l) => l.id));
       const entriesNietGekoppeld = entries.filter((entry) => {
@@ -64,6 +65,7 @@ function DashboardContent() {
         entriesTotaal: entries.length,
         entriesGepubliceerd: gepubliceerdeEntries.length,
         entriesConcept: conceptEntries.length,
+        entriesStub: stubEntries.length,
         kampplaatsenGekoppeld: locaties.length,
         extraLocatiesGepubliceerd: extraLocaties.filter((l) => l.status === 'published').length,
         mijlpalenGepubliceerd: mijlpalenGepubliceerd.length,
@@ -210,6 +212,7 @@ function DashboardContent() {
               >
                 <StatKaart label="Leden gepubliceerd" waarde={stats.entriesGepubliceerd} icon="📖" href="/beheer/vriendenboek" />
                 <StatKaart label="Concepten" waarde={stats.entriesConcept} icon="📝" href="/beheer/vriendenboek" />
+                <StatKaart label="Getagd, geen fiche" waarde={stats.entriesStub} icon="🏷️" href="/beheer/vriendenboek" />
                 <StatKaart label="Kampplaatsen gekoppeld" waarde={stats.kampplaatsenGekoppeld} icon="❤️" href="/beheer/kampplaatsen" />
                 <StatKaart label="Extra kampplaatsen" waarde={stats.extraLocatiesGepubliceerd} icon="📍" href="/beheer/kampplaatsen/extra" />
                 <StatKaart label="Mijlpalen gepubliceerd" waarde={stats.mijlpalenGepubliceerd} icon="🚩" href="/beheer/tijdlijn" />
