@@ -2,9 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /entries/{entryId} {
-      // Iedereen mag gepubliceerde entries lezen (individueel of via lijst-query
-      // met where('status','==','published')).
-      allow read: if resource.data.status == 'published';
+      // Iedereen mag gepubliceerde entries lezen, en ook "stub"-oudleden
+      // (enkel een naam, ontstaan doordat iemand ze getagd heeft in een
+      // foto of leidingsploeg zonder een eigen fiche).
+      allow read: if resource.data.status == 'published' || resource.data.status == 'stub';
 
       // Schrijven (aanmaken, bewerken, publiceren, verwijderen) enkel voor
       // ingelogde beheerders. Zie README voor het instellen van een
@@ -27,6 +28,17 @@ service cloud.firestore {
         && request.resource.data.leuksteActiviteit.size() < 500
         && request.resource.data.besteKampplaats.size() < 10
         && request.resource.data.lekkersteEten.size() < 10;
+
+      // "Stub"-oudlid: automatisch aangemaakt wanneer een bezoeker (zonder
+      // in te loggen) iemand taggen in een foto of leidingsploeg die nog
+      // geen eigen fiche heeft — enkel een naam, verder alles leeg.
+      allow create: if request.auth == null
+        && request.resource.data.status == 'stub'
+        && request.resource.data.naam is string
+        && request.resource.data.naam.size() > 0
+        && request.resource.data.naam.size() < 200
+        && request.resource.data.scanUrl == null
+        && request.resource.data.scanPath == null;
     }
 
     match /locations/{locationId} {
@@ -106,6 +118,17 @@ service cloud.firestore {
       // bij het beheer van leidingsploegen); enkel de beheerder wijzigt ze.
       allow read: if true;
       allow write: if request.auth != null;
+    }
+
+    match /statistieken/{statId} {
+      // Enkel de beheerder mag de tellingen bekijken; iedereen (ook niet-
+      // ingelogde bezoekers) mag enkel de teller ophogen -- geen andere
+      // velden lezen of individuele bezoek-data instellen.
+      allow read: if request.auth != null;
+      allow write: if request.resource.data.keys().hasOnly(['dag', 'pad', 'aantal'])
+        && request.resource.data.dag is string
+        && request.resource.data.pad is string
+        && request.resource.data.pad.size() < 200;
     }
 
     match /leidingsploegen/{leidingId} {
