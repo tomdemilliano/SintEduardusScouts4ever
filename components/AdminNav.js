@@ -11,6 +11,7 @@ const SECTIES = [
   { href: '/beheer/gerechten', label: 'Gerechten', icon: '🍽️', match: (p) => p.startsWith('/beheer/gerechten') },
   { href: '/beheer/links', label: 'Links', icon: '🔗', match: (p) => p.startsWith('/beheer/links') },
   { href: '/beheer/statistieken', label: 'Statistieken', icon: '📊', match: (p) => p.startsWith('/beheer/statistieken') },
+  { href: '/beheer/contact', label: 'Contact', icon: '✉️', match: (p) => p.startsWith('/beheer/contact') },
 ];
 
 export default function AdminNav() {
