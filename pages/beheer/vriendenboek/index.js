@@ -81,7 +81,8 @@ function VriendenboekContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, statusFilter, kampplaatsFilter, gekoppeldeLocaties]);
 
-  const aantalDraft = entries.filter((e) => e.status !== 'published').length;
+  const aantalDraft = entries.filter((e) => e.status === 'draft').length;
+  const aantalStub = entries.filter((e) => e.status === 'stub').length;
   const aantalNietGekoppeld = entries.filter((e) => {
     const { type } = kampplaatsStatus(e);
     return type === 'niet' || type === 'deels';
@@ -116,6 +117,9 @@ function VriendenboekContent() {
             </FilterButton>
             <FilterButton active={statusFilter === 'published'} onClick={() => setStatusFilter('published')}>
               Gepubliceerd
+            </FilterButton>
+            <FilterButton active={statusFilter === 'stub'} onClick={() => setStatusFilter('stub')}>
+              Getagd, geen fiche {aantalStub > 0 && `(${aantalStub})`}
             </FilterButton>
           </FilterGroup>
 
@@ -161,8 +165,13 @@ function VriendenboekContent() {
                   </div>
                   <div style={{ fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, marginTop: 2, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span>{entry.periode || 'periode onbekend'}</span>
-                    <span style={{ color: entry.status === 'published' ? colors.forest : colors.campfire, fontWeight: 600 }}>
-                      {entry.status === 'published' ? 'Gepubliceerd' : 'Concept'}
+                    <span
+                      style={{
+                        color: entry.status === 'published' ? colors.forest : entry.status === 'stub' ? colors.campfire : colors.inkMuted,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {entry.status === 'published' ? 'Gepubliceerd' : entry.status === 'stub' ? 'Getagd, geen fiche' : 'Concept'}
                     </span>
                     <KampplaatsBadge status={kampplaatsInfo} />
                   </div>
