@@ -39,6 +39,28 @@ service cloud.firestore {
         && request.resource.data.naam.size() < 200
         && request.resource.data.scanUrl == null
         && request.resource.data.scanPath == null;
+
+      // "Ben jij misschien X?" — een bezoeker vult op /toevoegen een
+      // volledig formulier in en bevestigt dat hij/zij een bestaande
+      // stub-fiche is. De stub wordt dan bijgewerkt (i.p.v. een nieuwe,
+      // dubbele entry aan te maken) en naar 'draft' getild, met
+      // koppelingBevestigd altijd op false — enkel de beheerder mag dat
+      // nadien op true zetten (zie de write-regel met request.auth != null
+      // hierboven).
+      allow update: if request.auth == null
+        && resource.data.status == 'stub'
+        && request.resource.data.status == 'draft'
+        && request.resource.data.koppelingBevestigd == false
+        && request.resource.data.scanUrl == null
+        && request.resource.data.scanPath == null
+        && request.resource.data.naam is string
+        && request.resource.data.naam.size() < 200
+        && request.resource.data.geboortejaar.size() < 20
+        && request.resource.data.totemnaam.size() < 100
+        && request.resource.data.periode.size() < 100
+        && request.resource.data.leuksteActiviteit.size() < 500
+        && request.resource.data.besteKampplaats.size() < 10
+        && request.resource.data.lekkersteEten.size() < 10;
     }
 
     match /locations/{locationId} {
