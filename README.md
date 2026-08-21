@@ -456,3 +456,56 @@ Oplossing:
   set foto's bladert als op het overzicht. Kwam je niet via het overzicht
   binnen (bv. een gedeelde link), dan valt de detailpagina netjes terug op
   alle gepubliceerde foto's, gesorteerd op datum.
+
+## Drie nieuwe beheerfuncties
+
+### 1. Dubbele/gelijkaardige foto's opsporen
+
+`/beheer/fotos/dubbels` — vergelijkt alle gepubliceerde foto's op
+**visuele gelijkenis**, niet enkel op identieke bestanden. Elke foto
+krijgt bij het opladen een "dHash" (difference hash — `lib/utils.js`,
+`berekenBeeldHash*`): een korte vingerafdruk berekend via canvas, die
+weinig verandert bij lichte compressie/verkleining maar wél verschilt bij
+een écht andere foto. Twee foto's met een kleine "Hamming-afstand" tussen
+hun hash zijn hoogstwaarschijnlijk dezelfde foto (of een variant ervan).
+
+Bestaande foto's (van vóór deze functie) krijgen hun hash pas bij de
+eerste scan — die berekent en bewaart 'm dan meteen, zodat een volgende
+scan sneller gaat. Gevonden groepen gelijkende foto's worden naast elkaar
+getoond, met een verwijderknop per foto.
+
+### 2. Bezoekerstatistieken
+
+`/beheer/statistieken` — bewust lichtgewicht en privacyvriendelijk: geen
+individuele bezoek-logs, IP-adressen of langdurige tracking, enkel een
+teller per (dag, pagina)-combinatie (`StatsFactory`, collectie
+`statistieken`), opgeteld via Firestore's `increment()`. Elke publieke
+paginaweergave (niet het beheergedeelte zelf) telt automatisch mee via
+`pages/_app.js`. Het scherm toont het totaal, een balkje per dag
+(laatste 30 dagen) en de meest bezochte pagina's.
+
+### 3. Getagde personen zonder vriendenboekje-fiche → "stub"-oudleden
+
+Tot nu toe verdween een vrij getypte naam bij het taggen (in foto's of
+leidingsploegen) na het opslaan — je moest 'm bij een volgende foto
+opnieuw intypen. Nu maakt `EntryFactory.findOrCreateStub()` daar
+automatisch een minimale entry van (enkel een naam, status `'stub'`),
+die nadien **hergevonden** wordt via dezelfde zoekfunctie
+(`MemberTagPicker`) in plaats van dubbel aangemaakt te worden.
+
+- **Publiek**: `/vriendenboekje` heeft nu twee tabbladen — "Leden" (zoals
+  voordien) en **"Getagd, geen eigen fiche"**, met daarin deze
+  stub-personen, telkens met het aantal foto's en/of leidingsploegen
+  waarin ze voorkomen. Hun profielpagina (`/entry/[id]`) toont gewoon de
+  foto's/leiding-lijst, met een duidelijke melding + link naar
+  `/toevoegen` voor wie zichzelf of iemand anders alsnog een echte fiche
+  wil geven.
+- **Beheer**: `/beheer/vriendenboek` heeft een extra statusfilter "Getagd,
+  geen fiche", zodat je deze stub-personen kan terugvinden en (via het
+  gewone bewerkscherm) alsnog kan aanvullen en publiceren — dat verandert
+  hun status gewoon naar `'published'`, geen aparte flow nodig.
+
+**Firestore-rules**: `entries` is nu ook publiek leesbaar voor
+`status == 'stub'`, en er is een nieuwe, beperkte publieke create-regel
+die enkel een naam toestaat (geen scan, geen andere velden) voor deze
+automatische aanmaak zonder login.
