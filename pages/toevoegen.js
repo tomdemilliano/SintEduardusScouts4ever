@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { EntryFactory } from '../lib/dbSchema';
@@ -31,6 +31,24 @@ export default function ToevoegenPage() {
   const [foutmelding, setFoutmelding] = useState(null);
   const [verzonden, setVerzonden] = useState(false);
 
+  // "Ben jij misschien X?" -- controle op bestaande stub-fiches
+  const [kandidaten, setKandidaten] = useState([]);
+  const [gekozenStub, setGekozenStub] = useState(null); // { id, naam } of null
+  const [promptAfgewezenVoor, setPromptAfgewezenVoor] = useState(null);
+
+  useEffect(() => {
+    if (gekozenStub) return; // al bevestigd, niet opnieuw controleren
+    const naamTrim = fields.naam.trim();
+    if (naamTrim.length < 3 || naamTrim === promptAfgewezenVoor) {
+      setKandidaten([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      EntryFactory.zoekMogelijkeStub(naamTrim).then(setKandidaten);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [fields.naam, gekozenStub, promptAfgewezenVoor]);
+
   const handleChange = (key, value) => {
     setFields((prev) => ({ ...prev, [key]: value }));
   };
@@ -59,12 +77,20 @@ export default function ToevoegenPage() {
 
     setVersturen(true);
     try {
-      await EntryFactory.create({
+      const opgeschoond = {
         ...fields,
         leuksteActiviteit: fields.leuksteActiviteit.map((a) => a.trim()).filter(Boolean),
         besteKampplaats: fields.besteKampplaats.map((k) => k.trim()).filter(Boolean),
         lekkersteEten: fields.lekkersteEten.map((g) => g.trim()).filter(Boolean),
-      });
+      };
+      if (gekozenStub) {
+        // Bevestigd "ja, dat ben ik" -- de bestaande stub-fiche bijwerken
+        // i.p.v. een nieuwe, dubbele entry aan te maken. De beheerder moet
+        // deze koppeling nadien nog expliciet bevestigen.
+        await EntryFactory.upgradeStubMetFormulier(gekozenStub.id, opgeschoond);
+      } else {
+        await EntryFactory.create(opgeschoond);
+      }
       setVerzonden(true);
     } catch (err) {
       setFoutmelding('Er ging iets mis bij het versturen. Probeer het straks nog eens.');
@@ -97,9 +123,9 @@ export default function ToevoegenPage() {
               Bedankt!
             </h1>
             <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, lineHeight: 1.5 }}>
-              Je gegevens zijn verstuurd. De beheerder van het vriendenboekje
-              moet ze nog even nakijken voor ze zichtbaar worden — dat kan
-              soms wel eventjes duren, dus even geduld.
+              {gekozenStub
+                ? 'Je gegevens zijn gekoppeld aan de bestaande fiche en verstuurd. De beheerder moet die koppeling nog bevestigen en de gegevens nakijken voor ze zichtbaar worden — dat kan soms wel eventjes duren, dus even geduld.'
+                : 'Je gegevens zijn verstuurd. De beheerder van het vriendenboekje moet ze nog even nakijken voor ze zichtbaar worden — dat kan soms wel eventjes duren, dus even geduld.'}
             </p>
             <Link
               href="/vriendenboekje"
@@ -158,6 +184,73 @@ export default function ToevoegenPage() {
           }}
         >
           <Veld label="Naam" value={fields.naam} onChange={(v) => handleChange('naam', v)} placeholder="Voornaam Achternaam" />
+
+          {gekozenStub && (
+            <div
+              style={{
+                background: colors.forest,
+                borderRadius: radius.card,
+                padding: '10px 14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.white, fontWeight: 600 }}>
+                ✓ Gekoppeld aan de bestaande, al eerder getagde fiche van "{gekozenStub.naam}"
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setGekozenStub(null);
+                  setPromptAfgewezenVoor(fields.naam.trim());
+                }}
+                style={{ background: 'none', border: 'none', color: colors.white, fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+              >
+                Toch niet
+              </button>
+            </div>
+          )}
+
+          {!gekozenStub && kandidaten.length > 0 && (
+            <div
+              style={{
+                background: colors.campfireLight,
+                border: `1.5px dashed ${colors.campfire}`,
+                borderRadius: radius.card,
+                padding: '12px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              {kandidaten.map((k) => (
+                <div key={k.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: fonts.body, fontSize: 13, color: colors.ink }}>
+                    Ben jij misschien <strong>{k.naam}</strong>? Die naam staat al getagd op foto's/leidingsploegen.
+                  </span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => setGekozenStub({ id: k.id, naam: k.naam })}
+                      style={{ padding: '6px 14px', borderRadius: radius.badge, border: 'none', background: colors.forest, color: colors.white, fontFamily: fonts.body, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Ja, dat ben ik
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPromptAfgewezenVoor(fields.naam.trim())}
+                      style={{ padding: '6px 14px', borderRadius: radius.badge, border: `1px solid ${colors.line}`, background: colors.white, color: colors.ink, fontFamily: fonts.body, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Nee, iemand anders
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <Veld label="Geboortejaar" value={fields.geboortejaar} onChange={(v) => handleChange('geboortejaar', v)} placeholder="19.." />
           <Veld label="Totemnaam" value={fields.totemnaam} onChange={(v) => handleChange('totemnaam', v)} />
           <Veld label="Lid in periode" value={fields.periode} onChange={(v) => handleChange('periode', v)} placeholder="1952 - 1955" />
