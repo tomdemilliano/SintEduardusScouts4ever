@@ -26,16 +26,35 @@ function KoppelenContent() {
   const [namen, setNamen] = useState([]); // [{ naam, fotoRefs: [{id}], leidingRefs: [{id}], alleLeden }]
   const [alleLeden, setAlleLeden] = useState([]);
   const [bezigVoor, setBezigVoor] = useState(null);
+  const [perOngelukGepubliceerd, setPerOngelukGepubliceerd] = useState([]);
+  const [terugzetBezig, setTerugzetBezig] = useState(false);
+
+  /**
+   * Een gepubliceerde entry die op een leeggebleven stub lijkt: alle
+   * vriendenboekje-specifieke velden staan nog leeg, en er is geen scan.
+   * Zo herkennen we entries die per ongeluk in bulk gepubliceerd werden.
+   */
+  const lijktOpPerOngelukGepubliceerdeStub = (e) =>
+    e.status === 'published' &&
+    !e.geboortejaar &&
+    !e.totemnaam &&
+    !e.periode &&
+    !e.scanUrl &&
+    (e.leuksteActiviteit || []).length === 0 &&
+    (e.besteKampplaats || []).length === 0 &&
+    (e.lekkersteEten || []).length === 0;
 
   const scan = async () => {
     setLoading(true);
-    const [fotos, leiding, leden, takken] = await Promise.all([
+    const [fotos, leiding, leden, takken, alleEntries] = await Promise.all([
       PhotoFactory.getAllAdmin(),
       LeidingFactory.getAll(),
       EntryFactory.getSearchable(),
       TakFactory.getAll(),
+      EntryFactory.getAll(),
     ]);
     setAlleLeden(leden);
+    setPerOngelukGepubliceerd(alleEntries.filter(lijktOpPerOngelukGepubliceerdeStub));
 
     const map = {}; // genormaliseerde naam -> { naam, fotoRefs, leidingRefs }
     fotos.forEach((foto) => {
@@ -69,6 +88,22 @@ function KoppelenContent() {
   useEffect(() => {
     scan();
   }, []);
+
+  const zetEenTerug = async (id) => {
+    await EntryFactory.revertToStub(id);
+    await scan();
+  };
+
+  const zetAllesTerug = async () => {
+    if (!confirm(`${perOngelukGepubliceerd.length} fiche(s) terugzetten naar "getagd, geen fiche"?`)) return;
+    setTerugzetBezig(true);
+    try {
+      await Promise.all(perOngelukGepubliceerd.map((e) => EntryFactory.revertToStub(e.id)));
+      await scan();
+    } finally {
+      setTerugzetBezig(false);
+    }
+  };
 
   const koppelAan = async (item, entryId) => {
     setBezigVoor(item.naam);
@@ -117,6 +152,47 @@ function KoppelenContent() {
           schrijfwijze) of maak er een nieuwe stub-fiche van — dat past
           meteen alle foto's/leidingsploegen met die naam aan.
         </p>
+
+        {!loading && perOngelukGepubliceerd.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+              <div style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: colors.stamp }}>
+                Lijkt op per ongeluk gepubliceerd ({perOngelukGepubliceerd.length})
+              </div>
+              <button onClick={zetAllesTerug} disabled={terugzetBezig} style={btn(colors.stamp)}>
+                {terugzetBezig ? 'Bezig…' : `Alles (${perOngelukGepubliceerd.length}) terugzetten`}
+              </button>
+            </div>
+            <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, marginBottom: 12 }}>
+              Deze fiches zijn gepubliceerd, maar hebben geen enkel
+              vriendenboekje-veld ingevuld (geen geboortejaar, totemnaam,
+              periode, activiteiten, kampplaats, eten of scan) — waarschijnlijk
+              stub-fiches die per ongeluk mee gepubliceerd werden.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {perOngelukGepubliceerd.map((e) => (
+                <div
+                  key={e.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    background: colors.campfireLight,
+                    border: `1.5px dashed ${colors.campfire}`,
+                    borderRadius: radius.card,
+                  }}
+                >
+                  <span style={{ fontFamily: fonts.display, fontSize: 15, fontWeight: 600, color: colors.ink }}>{e.naam}</span>
+                  <button onClick={() => zetEenTerug(e.id)} style={btn(colors.stamp)}>
+                    Terugzetten
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {loading && <p style={{ fontFamily: fonts.body, color: colors.inkMuted }}>Bezig met scannen…</p>}
 
