@@ -10,6 +10,7 @@ const SECTIES = [
   { href: '/beheer/fotos', label: "Foto's", icon: '📷', match: (p) => p.startsWith('/beheer/fotos') },
   { href: '/beheer/gerechten', label: 'Gerechten', icon: '🍽️', match: (p) => p.startsWith('/beheer/gerechten') },
   { href: '/beheer/links', label: 'Links', icon: '🔗', match: (p) => p.startsWith('/beheer/links') },
+  { href: '/beheer/statistieken', label: 'Statistieken', icon: '📊', match: (p) => p.startsWith('/beheer/statistieken') },
 ];
 
 export default function AdminNav() {
