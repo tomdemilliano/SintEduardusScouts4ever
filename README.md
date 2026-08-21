@@ -557,3 +557,23 @@ het "Getagd, geen eigen fiche"-tabblad i.p.v. tussen de echte,
 gepubliceerde leden te staan.
 
 Nieuwe functie: `EntryFactory.revertToStub(id)`.
+
+## Verstrakking: stub-fiches kunnen niet meer per ongeluk gepubliceerd worden
+
+- **"Niet-gekoppelde tags"-tabblad verwijderd** — sinds `MemberTagPicker`
+  altijd een entry-ID toekent (bestaand lid of nieuwe stub-fiche), kan
+  deze situatie niet meer ontstaan. `/beheer/vriendenboek/koppelen`
+  bestaat nog als vangnet (enkel de "per ongeluk gepubliceerd"-scan,
+  zie vorige sectie), maar staat niet meer in de tabbladen — enkel nog
+  rechtstreeks via de URL bereikbaar.
+- **Bewerken/Publiceren/Depubliceren verwijderd voor stub-fiches** op
+  `/beheer/vriendenboek`: voor een fiche met status `'stub'` blijft enkel
+  **Verwijderen** over, zodat een stub niet per ongeluk bewerkt of
+  gepubliceerd kan worden. (Het "ben jij misschien X?"-pad op `/toevoegen`
+  blijft wél de normale, bedoelde manier om een stub naar een echte fiche
+  te upgraden.)
+- **Verwijderen van een stub is nu een cascade**: `EntryFactory.removeStub()`
+  verwijdert niet enkel de fiche zelf, maar ook meteen de tag op elke
+  foto (`PhotoFactory.removeEntryFromTags`) en de koppeling in elke
+  leidingsploeg (`LeidingFactory.removeEntryFromAll`) — geen verweesde
+  verwijzingen naar een niet meer bestaand lid.
