@@ -509,3 +509,38 @@ die nadien **hergevonden** wordt via dezelfde zoekfunctie
 `status == 'stub'`, en er is een nieuwe, beperkte publieke create-regel
 die enkel een naam toestaat (geen scan, geen andere velden) voor deze
 automatische aanmaak zonder login.
+
+## Bijkomend: bestaande niet-gekoppelde tags opruimen + koppeling-bevestiging
+
+Vervolg op de stub-oudleden-functie:
+
+- **`/beheer/vriendenboek/koppelen`** (nieuw tabblad) — scant alle foto's
+  en leidingsploegen op vrij getypte namen zonder `entryId` (van vóór
+  `MemberTagPicker` automatisch een stub-fiche aanmaakte). Voor elke
+  gevonden naam kan je ofwel koppelen aan een bestaand lid (zoekfunctie,
+  handig bij een licht andere schrijfwijze) ofwel een nieuwe stub-fiche
+  laten aanmaken — in beide gevallen worden **alle** foto's/
+  leidingsploegen met die naam in één keer mee bijgewerkt
+  (`PhotoFactory.linkLedenTagNaam`, `LeidingFactory.linkLedenNaam` — deze
+  raken bewust enkel het ledenTags/leden-veld, niets anders).
+
+- **"Ben jij misschien X?" op `/toevoegen`** — terwijl iemand zijn naam
+  intypt, wordt (met een korte vertraging) gecontroleerd of er al een
+  stub-fiche met een gelijkaardige naam bestaat. Bij bevestiging wordt
+  niet een nieuwe, dubbele entry aangemaakt, maar de bestaande stub-fiche
+  bijgewerkt (`EntryFactory.upgradeStubMetFormulier`) — alle foto's/
+  leidingsploegen die er al naar verwezen, blijven dus automatisch
+  gekoppeld. Status wordt `'draft'`, met een nieuw veld
+  `koppelingBevestigd: false`.
+
+- **Expliciete beheerdersgoedkeuring van de koppeling** — op
+  `/beheer/vriendenboek/[id]` zie je, als een lid al getagd is in
+  foto's/leidingsploegen, hoeveel er dat zijn, met een aparte
+  "✓ Ja, dit is dezelfde persoon"-knop. Zolang die niet is ingedrukt (bij
+  een via `/toevoegen` bevestigde koppeling staat dit standaard nog
+  open), blijft de "Publiceren"-knop uitgeschakeld — zo kan een verkeerd
+  bevestigde naamgelijkenis nooit ongemerkt gepubliceerd worden.
+
+**Firestore-rules**: een nieuwe publieke *update*-regel voor `entries`
+(enkel de overgang `stub` → `draft`, met `koppelingBevestigd` verplicht
+op `false`) — opnieuw deployen.
