@@ -9,6 +9,7 @@ import {
   KentekenFactory,
   LinkFactory,
   PhotoFactory,
+  ContactFactory,
 } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import { toTextArray, huidigWerkingsjaarStart } from '../../lib/utils';
@@ -36,7 +37,8 @@ function DashboardContent() {
       KentekenFactory.getAll(),
       LinkFactory.getAll(),
       PhotoFactory.getAllAdmin(),
-    ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links, fotos]) => {
+      ContactFactory.getAll(),
+    ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links, fotos, contactBerichten]) => {
       const gepubliceerdeEntries = entries.filter((e) => e.status === 'published');
       const conceptEntries = entries.filter((e) => e.status !== 'published');
 
@@ -118,6 +120,14 @@ function DashboardContent() {
           href: '/beheer/fotos',
           label: `${fotosVerwijderVerzoek.length} verwijderverzoek${fotosVerwijderVerzoek.length === 1 ? '' : 'en'} voor foto's`,
           icon: '🗑️',
+        });
+      }
+      const ongelezenContact = contactBerichten.filter((b) => !b.gelezen);
+      if (ongelezenContact.length > 0) {
+        lijst.push({
+          href: '/beheer/contact',
+          label: `${ongelezenContact.length} nieuw${ongelezenContact.length === 1 ? '' : 'e'} contactbericht${ongelezenContact.length === 1 ? '' : 'en'}`,
+          icon: '✉️',
         });
       }
       setTodos(lijst);
