@@ -3,15 +3,20 @@ import { EntryFactory } from '../lib/dbSchema';
 import { colors, fonts, radius } from '../lib/theme';
 
 /**
- * value: array van { naam, entryId } — entryId is null voor vrij getypte
- * namen die niet overeenkomen met een bestaand vriendenboekje-lid.
+ * value: array van { naam, entryId } — entryId is nu altijd gevuld: een vrij
+ * getypte naam die niet overeenkomt met een bestaand lid wordt automatisch
+ * bewaard als een minimale "stub"-oudlid-fiche (EntryFactory.findOrCreateStub),
+ * zodat diezelfde persoon bij een volgende tag teruggevonden wordt in plaats
+ * van telkens opnieuw te moeten intypen.
  */
 export default function MemberTagPicker({ value, onChange }) {
   const [alleLeden, setAlleLeden] = useState([]);
   const [zoekterm, setZoekterm] = useState('');
+  const [bezig, setBezig] = useState(false);
 
   useEffect(() => {
-    EntryFactory.getPublished().then(setAlleLeden);
+    // getSearchable() = gepubliceerde leden + eerder aangemaakte stub-oudleden
+    EntryFactory.getSearchable().then(setAlleLeden);
   }, []);
 
   const tags = value || [];
@@ -23,10 +28,31 @@ export default function MemberTagPicker({ value, onChange }) {
         .slice(0, 6)
     : [];
 
-  const voegToe = (naam, entryId) => {
+  const voegToe = async (naam, entryId) => {
     if (tags.some((t) => t.naam.toLowerCase() === naam.toLowerCase())) return;
-    onChange([...tags, { naam, entryId: entryId || null }]);
-    setZoekterm('');
+
+    if (entryId) {
+      onChange([...tags, { naam, entryId }]);
+      setZoekterm('');
+      return;
+    }
+
+    // Vrij getypte naam: zoek of maak een stub-oudlid aan, zodat de naam
+    // herbruikbaar is bij een volgende tag i.p.v. telkens opnieuw te typen.
+    setBezig(true);
+    try {
+      const nieuwId = await EntryFactory.findOrCreateStub(naam);
+      const gevonden = alleLeden.find((e) => e.id === nieuwId);
+      onChange([...tags, { naam: gevonden?.naam || naam, entryId: nieuwId }]);
+      setZoekterm('');
+      if (!gevonden) {
+        // meteen mee opnemen in de lokale lijst, voor het geval dezelfde
+        // naam in dit formulier nog eens ingetypt wordt
+        setAlleLeden((prev) => [...prev, { id: nieuwId, naam }]);
+      }
+    } finally {
+      setBezig(false);
+    }
   };
 
   const verwijder = (index) => {
@@ -70,12 +96,13 @@ export default function MemberTagPicker({ value, onChange }) {
         value={zoekterm}
         onChange={(e) => setZoekterm(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && zoekterm.trim()) {
+          if (e.key === 'Enter' && zoekterm.trim() && !bezig) {
             e.preventDefault();
             voegToe(zoekterm.trim(), null);
           }
         }}
-        placeholder="Typ een naam en kies uit de lijst, of druk Enter voor een vrije naam"
+        placeholder={bezig ? 'Bezig met opslaan…' : 'Typ een naam en kies uit de lijst, of druk Enter voor een nieuwe naam'}
+        disabled={bezig}
         style={{
           width: '100%',
           padding: '9px 12px',
