@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import 'leaflet/dist/leaflet.css';
 import Decorations from '../components/Decorations';
 import { StatsFactory } from '../lib/dbSchema';
@@ -18,6 +19,9 @@ export default function App({ Component, pageProps }) {
 
   return (
     <>
+      <Head>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
       <style jsx global>{`
         html,
         body {
