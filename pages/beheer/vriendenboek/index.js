@@ -19,7 +19,6 @@ const TABS = [
   { href: '/beheer/vriendenboek', label: 'Overzicht', exact: true },
   { href: '/beheer/vriendenboek/upload', label: '+ Eén scan' },
   { href: '/beheer/vriendenboek/bulk-upload', label: '+ Meerdere scans' },
-  { href: '/beheer/vriendenboek/koppelen', label: '🔗 Niet-gekoppelde tags' },
 ];
 
 function VriendenboekContent() {
@@ -52,8 +51,13 @@ function VriendenboekContent() {
   };
 
   const handleDelete = async (entry) => {
-    if (!confirm(`"${entry.naam}" definitief verwijderen?`)) return;
-    await EntryFactory.remove(entry.id, entry.scanPath);
+    if (entry.status === 'stub') {
+      if (!confirm(`"${entry.naam}" definitief verwijderen? Dit verwijdert ook meteen de foto-tags en leidingsploeg-koppelingen van deze persoon.`)) return;
+      await EntryFactory.removeStub(entry.id);
+    } else {
+      if (!confirm(`"${entry.naam}" definitief verwijderen?`)) return;
+      await EntryFactory.remove(entry.id, entry.scanPath);
+    }
     load();
   };
 
@@ -179,17 +183,21 @@ function VriendenboekContent() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Link href={`/beheer/vriendenboek/${entry.id}`} style={btnStyleOutline}>
-                    Bewerken
-                  </Link>
-                  {entry.status === 'published' ? (
-                    <button onClick={() => handleUnpublish(entry.id)} style={btnStyle(colors.inkMuted)}>
-                      Depubliceren
-                    </button>
-                  ) : (
-                    <button onClick={() => handlePublish(entry.id)} style={btnStyle(colors.forest)}>
-                      Publiceren
-                    </button>
+                  {entry.status !== 'stub' && (
+                    <>
+                      <Link href={`/beheer/vriendenboek/${entry.id}`} style={btnStyleOutline}>
+                        Bewerken
+                      </Link>
+                      {entry.status === 'published' ? (
+                        <button onClick={() => handleUnpublish(entry.id)} style={btnStyle(colors.inkMuted)}>
+                          Depubliceren
+                        </button>
+                      ) : (
+                        <button onClick={() => handlePublish(entry.id)} style={btnStyle(colors.forest)}>
+                          Publiceren
+                        </button>
+                      )}
+                    </>
                   )}
                   <button onClick={() => handleDelete(entry)} style={btnStyle(colors.stamp)}>
                     Verwijderen
