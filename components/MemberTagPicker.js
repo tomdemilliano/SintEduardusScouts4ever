@@ -91,30 +91,55 @@ export default function MemberTagPicker({ value, onChange }) {
         ))}
       </div>
 
-      <input
-        type="text"
-        value={zoekterm}
-        onChange={(e) => setZoekterm(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && zoekterm.trim() && !bezig) {
-            e.preventDefault();
-            voegToe(zoekterm.trim(), null);
-          }
-        }}
-        placeholder={bezig ? 'Bezig met opslaan…' : 'Typ een naam en kies uit de lijst, of druk Enter voor een nieuwe naam'}
-        disabled={bezig}
-        style={{
-          width: '100%',
-          padding: '9px 12px',
-          borderRadius: radius.input,
-          border: `1px solid ${colors.line}`,
-          background: colors.white,
-          fontFamily: fonts.body,
-          fontSize: 14,
-          color: colors.ink,
-          boxSizing: 'border-box',
-        }}
-      />
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          value={zoekterm}
+          onChange={(e) => setZoekterm(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && zoekterm.trim() && !bezig) {
+              e.preventDefault();
+              voegToe(zoekterm.trim(), null);
+            }
+          }}
+          placeholder={bezig ? 'Bezig met opslaan…' : 'Typ een naam…'}
+          disabled={bezig}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '9px 12px',
+            borderRadius: radius.input,
+            border: `1px solid ${colors.line}`,
+            background: colors.white,
+            fontFamily: fonts.body,
+            fontSize: 14,
+            color: colors.ink,
+            boxSizing: 'border-box',
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => zoekterm.trim() && voegToe(zoekterm.trim(), null)}
+          disabled={bezig || !zoekterm.trim()}
+          style={{
+            padding: '9px 16px',
+            borderRadius: radius.input,
+            border: 'none',
+            background: bezig || !zoekterm.trim() ? colors.inkMuted : colors.forest,
+            color: colors.white,
+            fontFamily: fonts.body,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: bezig || !zoekterm.trim() ? 'default' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          + Toevoegen
+        </button>
+      </div>
+      <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: '4px 0 0' }}>
+        Kies uit de suggesties hieronder, of typ een nieuwe naam en druk op "+ Toevoegen".
+      </p>
 
       {suggesties.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
