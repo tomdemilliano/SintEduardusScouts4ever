@@ -544,3 +544,16 @@ Vervolg op de stub-oudleden-functie:
 **Firestore-rules**: een nieuwe publieke *update*-regel voor `entries`
 (enkel de overgang `stub` → `draft`, met `koppelingBevestigd` verplicht
 op `false`) — opnieuw deployen.
+
+## Bugfix/hersteltool: per ongeluk gepubliceerde stub-fiches terugzetten
+
+Op `/beheer/vriendenboek/koppelen` staat nu, bovenaan, een aparte sectie
+**"Lijkt op per ongeluk gepubliceerd"**. Die herkent gepubliceerde entries
+die op een leeggebleven stub lijken (geen geboortejaar, totemnaam,
+periode, activiteiten, kampplaats, eten of scan — enkel een naam), met
+zowel een knop per fiche als een "Alles terugzetten"-knop om ze in bulk
+terug naar status `'stub'` te zetten. Zo verschijnen ze weer correct in
+het "Getagd, geen eigen fiche"-tabblad i.p.v. tussen de echte,
+gepubliceerde leden te staan.
+
+Nieuwe functie: `EntryFactory.revertToStub(id)`.
