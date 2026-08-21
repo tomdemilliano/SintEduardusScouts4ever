@@ -602,3 +602,27 @@ Wil je dit later uitbreiden met een echte e-mailnotificatie bij een nieuw
 bericht (bv. via Resend, zoals bij Winkelsimpel), dan is dat een kleine
 uitbreiding bovenop `ContactFactory.create()` — voorlopig moet je gewoon
 even op `/beheer/contact` gaan kijken.
+
+## Kampplaatsen: compactere weergave + klik-naar-kaart
+
+- **Compacte tegels i.p.v. brede kaarten**: elke kampplaats is nu een
+  kleine, naast elkaar geplaatste tegel (naam + ❤️-aantal, of 📍 voor een
+  extra plek) in plaats van een volle-breedte kaart per plek — veel minder
+  scrollen om alles te zien. De namen van de vrienden die een plek als
+  "beste kampplaats" kozen staan niet langer standaard zichtbaar; ze
+  verschijnen als tooltip (onder elkaar) wanneer je over de tegel
+  hovert.
+- **Extra getipte plekken zijn zichtbaarder** simpelweg doordat de hele
+  pagina nu veel korter is — de sectie staat niet langer ver weg onder een
+  lange stapel kaarten, en gebruikt exact dezelfde, compacte tegelstijl
+  als de "leukste kampplaatsen", dus ze vallen evenveel op.
+- **Klikken op een naam licht de bijhorende pin uit op de kaart** (groter
+  icoon, komt bovenop de andere pins te liggen, de kaart pant er zachtjes
+  naartoe, en de popup opent automatisch). Nogmaals klikken op dezelfde
+  tegel zet de markering weer uit.
+
+Technisch: `components/CampMap.js` houdt de Leaflet-markers nu bij in een
+`ref` en past bij een wijziging van de nieuwe `gemarkeerd`-prop enkel het
+icoon van de betrokken marker aan, in plaats van de hele kaart (en dus
+alle markers) opnieuw op te bouwen — dat voorkomt een merkbare
+"flikker"/herlaad-hapering bij elke klik.
