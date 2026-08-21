@@ -184,7 +184,7 @@ export default function KampplaatsenPage() {
           bottom: calc(100% + 8px);
           left: 50%;
           transform: translateX(-50%);
-          z-index: 20;
+          z-index: 9999;
           background: ${colors.ink};
           color: ${colors.paper};
           font-family: ${fonts.body};
