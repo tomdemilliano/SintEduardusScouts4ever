@@ -1,7 +1,21 @@
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import 'leaflet/dist/leaflet.css';
 import Decorations from '../components/Decorations';
+import { StatsFactory } from '../lib/dbSchema';
 
 export default function App({ Component, pageProps }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Enkel publieke pagina's tellen als bezoek -- het beheergedeelte is
+    // jouw eigen gebruik, geen "bezoekersverkeer".
+    if (!router.pathname.startsWith('/beheer')) {
+      StatsFactory.logBezoek(router.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.pathname]);
+
   return (
     <>
       <style jsx global>{`
