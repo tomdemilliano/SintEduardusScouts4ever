@@ -1,14 +1,25 @@
 import { useEffect, useRef } from 'react';
 import { colors } from '../lib/theme';
 
+const NORMALE_GROOTTE = 16;
+const GEMARKEERDE_GROOTTE = 28;
+
+function maakIconHtml(kleur, groot) {
+  const grootte = groot ? GEMARKEERDE_GROOTTE : NORMALE_GROOTTE;
+  return `<div style="width:${grootte}px;height:${grootte}px;border-radius:50%;background:${kleur};border:3px solid ${colors.paper};box-shadow:0 1px ${groot ? 7 : 3}px rgba(0,0,0,${groot ? 0.45 : 0.3});"></div>`;
+}
+
 /**
  * pins: { naam, lat, lng, kleur?, popupHtml? }
+ * gemarkeerd: naam van de pin die uitgelicht moet worden (groter icoon,
+ * bovenop de andere pins, kaart pant er zachtjes naartoe) — of null.
  * kleur en popupHtml zijn optioneel — standaard kampvuur-oranje en een
  * simpele naam-popup, zodat bestaande aanroepen zonder wijziging blijven werken.
  */
-export default function CampMap({ pins }) {
+export default function CampMap({ pins, gemarkeerd }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
+  const markersRef = useRef([]); // [{ pin, marker }]
 
   useEffect(() => {
     if (!containerRef.current || pins.length === 0) return;
@@ -32,22 +43,30 @@ export default function CampMap({ pins }) {
         maxZoom: 18,
       }).addTo(map);
 
-      const maakIcon = (kleur) =>
+      const maakIcon = (kleur, groot) =>
         L.divIcon({
           className: '',
-          html: `<div style="width:16px;height:16px;border-radius:50%;background:${kleur};border:3px solid ${colors.paper};box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: maakIconHtml(kleur, groot),
+          iconSize: [groot ? GEMARKEERDE_GROOTTE : NORMALE_GROOTTE, groot ? GEMARKEERDE_GROOTTE : NORMALE_GROOTTE],
+          iconAnchor: [
+            (groot ? GEMARKEERDE_GROOTTE : NORMALE_GROOTTE) / 2,
+            (groot ? GEMARKEERDE_GROOTTE : NORMALE_GROOTTE) / 2,
+          ],
         });
 
       const bounds = [];
+      const markers = [];
       pins.forEach((pin) => {
-        const marker = L.marker([pin.lat, pin.lng], { icon: maakIcon(pin.kleur || colors.campfire) }).addTo(map);
+        const groot = gemarkeerd && pin.naam === gemarkeerd;
+        const marker = L.marker([pin.lat, pin.lng], { icon: maakIcon(pin.kleur || colors.campfire, groot) }).addTo(map);
         marker.bindPopup(
           pin.popupHtml || `<strong>${pin.naam}</strong>${pin.count ? `<br/>${pin.count} vermelding${pin.count === 1 ? '' : 'en'}` : ''}`
         );
+        if (groot) marker.setZIndexOffset(1000);
         bounds.push([pin.lat, pin.lng]);
+        markers.push({ pin, marker });
       });
+      markersRef.current = markers;
 
       if (bounds.length === 1) {
         map.setView(bounds[0], 9);
@@ -63,7 +82,38 @@ export default function CampMap({ pins }) {
         mapRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pins]);
+
+  // Enkel het icoon van de gemarkeerde pin aanpassen -- geen volledige
+  // herbouw van de kaart nodig, dus geen "flikkering" bij het klikken.
+  useEffect(() => {
+    if (!markersRef.current.length) return;
+    let cancelled = false;
+    import('leaflet').then((L) => {
+      if (cancelled) return;
+      markersRef.current.forEach(({ pin, marker }) => {
+        const groot = Boolean(gemarkeerd && pin.naam === gemarkeerd);
+        const grootte = groot ? GEMARKEERDE_GROOTTE : NORMALE_GROOTTE;
+        marker.setIcon(
+          L.divIcon({
+            className: '',
+            html: maakIconHtml(pin.kleur || colors.campfire, groot),
+            iconSize: [grootte, grootte],
+            iconAnchor: [grootte / 2, grootte / 2],
+          })
+        );
+        marker.setZIndexOffset(groot ? 1000 : 0);
+        if (groot) {
+          marker.openPopup();
+          if (mapRef.current) mapRef.current.panTo([pin.lat, pin.lng]);
+        }
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [gemarkeerd]);
 
   if (pins.length === 0) return null;
 
