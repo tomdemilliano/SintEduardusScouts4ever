@@ -577,3 +577,28 @@ Nieuwe functie: `EntryFactory.revertToStub(id)`.
   foto (`PhotoFactory.removeEntryFromTags`) en de koppeling in elke
   leidingsploeg (`LeidingFactory.removeEntryFromAll`) — geen verweesde
   verwijzingen naar een niet meer bestaand lid.
+
+## Contactformulier + kleine opruiming
+
+- **"Reünie oud-scouts"-label verwijderd** van `/vriendenboekje` — de site
+  is intussen veel meer dan enkel dat.
+- **Nieuw contactsysteem**, zonder e-mail-infrastructuur nodig: berichten
+  komen in een Firestore-collectie `contactBerichten` terecht (publiek
+  enkel aan te maken, niet te lezen), en jij bekijkt/beheert ze via
+  `/beheer/contact` (met een "nieuw"/"gelezen"-onderscheid, en een
+  `mailto:`-link per bericht om er rechtstreeks op te antwoorden). Het
+  dashboard toont ongelezen berichten ook in de "Te behandelen"-lijst.
+- **`/contact`** (nieuw, publiek): een eenvoudig formulier (naam,
+  e-mailadres, groep/gemeente, bericht), met dezelfde rekensom +
+  honeypot-beveiliging als de andere publieke formulieren.
+- **Prominente boodschap op de landingspagina**: een opvallend kader dat
+  uitnodigt tot contact voor wie van een andere scoutsgroep is en ook zo'n
+  website wil.
+- **Subtiele contactlink op elke andere publieke pagina**: toegevoegd aan
+  het gedeelde `PublicNav`-component (`ContactLink`), dus automatisch
+  overal aanwezig zonder dat elke pagina apart aangepast moest worden.
+
+Wil je dit later uitbreiden met een echte e-mailnotificatie bij een nieuw
+bericht (bv. via Resend, zoals bij Winkelsimpel), dan is dat een kleine
+uitbreiding bovenop `ContactFactory.create()` — voorlopig moet je gewoon
+even op `/beheer/contact` gaan kijken.
