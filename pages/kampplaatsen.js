@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -14,6 +14,8 @@ export default function KampplaatsenPage() {
   const [extraLocaties, setExtraLocaties] = useState([]);
   const [pins, setPins] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [gemarkeerd, setGemarkeerd] = useState(null);
+  const mapWrapperRef = useRef(null);
 
   useEffect(() => {
     Promise.all([EntryFactory.getPublished(), LocationFactory.getAll(), ExtraLocationFactory.getPublished()]).then(
@@ -57,6 +59,11 @@ export default function KampplaatsenPage() {
     );
   }, []);
 
+  const markeer = (naam) => {
+    setGemarkeerd((huidige) => (huidige === naam ? null : naam));
+    mapWrapperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
@@ -95,13 +102,13 @@ export default function KampplaatsenPage() {
         )}
 
         {!loading && pins.length > 0 && (
-          <div style={{ marginBottom: 12, border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden' }}>
-            <CampMap pins={pins} />
+          <div ref={mapWrapperRef} style={{ marginBottom: 12, border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden' }}>
+            <CampMap pins={pins} gemarkeerd={gemarkeerd} />
           </div>
         )}
 
         {!loading && pins.length > 0 && (
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 32, fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted }}>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 28, fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted }}>
             <span><Dot kleur={colors.campfire} /> Uit de vriendenboekjes (❤️ likes)</span>
             <span><Dot kleur={colors.forest} /> Extra getipte plekken</span>
           </div>
@@ -124,42 +131,18 @@ export default function KampplaatsenPage() {
         )}
 
         {/* De "leukste" kampplaatsen — likes uit de vriendenboekjes */}
-        <div
-          style={{
-            fontFamily: fonts.body,
-            fontSize: 12,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            color: colors.inkMuted,
-            marginBottom: 10,
-          }}
-        >
-          ❤️ De leukste kampplaatsen (uit de vriendenboekjes)
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
+        <SectieTitel>❤️ De leukste kampplaatsen (uit de vriendenboekjes)</SectieTitel>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 32 }}>
           {groepen.map((groep) => (
-            <div
+            <KampplaatsTegel
               key={groep.label}
-              style={{
-                background: colors.paperCard,
-                border: `1px solid ${colors.line}`,
-                borderRadius: radius.card,
-                padding: '16px 18px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: fonts.display, fontSize: 19, fontWeight: 600, color: colors.ink }}>
-                  {groep.label}
-                </span>
-                <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 600, color: colors.campfire }}>
-                  ❤️ {groep.entries.length}×
-                </span>
-              </div>
-              <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, marginTop: 4 }}>
-                {groep.entries.map((e) => e.naam).join(', ')}
-              </div>
-            </div>
+              naam={groep.label}
+              type="like"
+              count={groep.entries.length}
+              namen={groep.entries.map((e) => e.naam)}
+              actief={gemarkeerd === groep.label}
+              onClick={() => markeer(groep.label)}
+            />
           ))}
         </div>
 
@@ -172,45 +155,107 @@ export default function KampplaatsenPage() {
         {/* Extra, apart voorgestelde plekken — geen stemmen/likes */}
         {extraLocaties.length > 0 && (
           <>
-            <div
-              style={{
-                fontFamily: fonts.body,
-                fontSize: 12,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                color: colors.inkMuted,
-                marginBottom: 10,
-              }}
-            >
-              📍 Extra getipte plekken
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <SectieTitel>📍 Extra getipte plekken</SectieTitel>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {extraLocaties.map((loc) => (
-                <div
+                <KampplaatsTegel
                   key={loc.id}
-                  style={{
-                    background: colors.paperCard,
-                    border: `1px solid ${colors.line}`,
-                    borderRadius: radius.card,
-                    padding: '16px 18px',
-                  }}
-                >
-                  <span style={{ fontFamily: fonts.display, fontSize: 19, fontWeight: 600, color: colors.ink }}>
-                    {loc.naam}
-                  </span>
-                  {loc.beschrijving && (
-                    <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, marginTop: 4 }}>
-                      {loc.beschrijving}
-                    </div>
-                  )}
-                </div>
+                  naam={loc.naam}
+                  type="extra"
+                  beschrijving={loc.beschrijving}
+                  actief={gemarkeerd === loc.naam}
+                  onClick={() => markeer(loc.naam)}
+                />
               ))}
             </div>
           </>
         )}
       </div>
+
+      <style jsx>{`
+        .vb-kampplek-tegel {
+          position: relative;
+        }
+        .vb-kampplek-tooltip {
+          display: none;
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 20;
+          background: ${colors.ink};
+          color: ${colors.paper};
+          font-family: ${fonts.body};
+          font-size: 12px;
+          line-height: 1.6;
+          padding: 8px 12px;
+          border-radius: ${radius.input};
+          white-space: nowrap;
+          box-shadow: 0 4px 12px rgba(44, 36, 25, 0.25);
+        }
+        .vb-kampplek-tegel:hover .vb-kampplek-tooltip {
+          display: block;
+        }
+      `}</style>
     </div>
+  );
+}
+
+function SectieTitel({ children }) {
+  return (
+    <div
+      style={{
+        fontFamily: fonts.body,
+        fontSize: 12,
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        color: colors.inkMuted,
+        marginBottom: 10,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function KampplaatsTegel({ naam, type, count, namen, beschrijving, actief, onClick }) {
+  const kleur = type === 'extra' ? colors.forest : colors.campfire;
+  return (
+    <button
+      className="vb-kampplek-tegel"
+      onClick={onClick}
+      title={beschrijving || undefined}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '9px 14px',
+        borderRadius: radius.badge,
+        border: `1.5px solid ${actief ? kleur : colors.line}`,
+        background: actief ? kleur : colors.paperCard,
+        cursor: 'pointer',
+      }}
+    >
+      <span style={{ fontFamily: fonts.display, fontSize: 15, fontWeight: 600, color: actief ? colors.white : colors.ink }}>
+        {naam}
+      </span>
+      {type === 'like' ? (
+        <span style={{ fontFamily: fonts.body, fontSize: 12, fontWeight: 700, color: actief ? colors.white : colors.campfire }}>
+          ❤️ {count}
+        </span>
+      ) : (
+        <span style={{ fontSize: 13 }}>📍</span>
+      )}
+
+      {type === 'like' && namen && namen.length > 0 && (
+        <div className="vb-kampplek-tooltip">
+          {namen.map((n, i) => (
+            <div key={i}>{n}</div>
+          ))}
+        </div>
+      )}
+    </button>
   );
 }
 
