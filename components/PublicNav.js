@@ -119,12 +119,33 @@ export function NavButtons({ style }) {
   );
 }
 
+/** Kleine, altijd aanwezige link naar het contactformulier — verschijnt op elke pagina die PublicNav of NavButtons gebruikt. */
+export function ContactLink() {
+  return (
+    <div style={{ textAlign: 'center', marginTop: 6 }}>
+      <Link
+        href="/contact"
+        style={{
+          fontFamily: fonts.body,
+          fontSize: 11,
+          color: colors.inkMuted,
+          textDecoration: 'underline',
+          textDecorationColor: colors.line,
+        }}
+      >
+        ✉️ Contacteer de websitebeheerder
+      </Link>
+    </div>
+  );
+}
+
 /** Header (logo) + navigatieknoppen samen — gebruikt op alle pagina's behalve de landingspagina. */
 export default function PublicNav() {
   return (
     <div>
       <SiteHeader />
       <NavButtons />
+      <ContactLink />
     </div>
   );
 }
