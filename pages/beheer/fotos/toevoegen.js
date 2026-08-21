@@ -10,6 +10,7 @@ const TABS = [
   { href: '/beheer/fotos', label: 'Overzicht', exact: true },
   { href: '/beheer/fotos/toevoegen', label: "+ Foto's toevoegen" },
   { href: '/beheer/fotos/tags', label: 'Tags' },
+  { href: '/beheer/fotos/dubbels', label: '🔍 Dubbels' },
 ];
 
 const STATUS_LABEL = {
