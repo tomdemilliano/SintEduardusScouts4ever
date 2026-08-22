@@ -5,7 +5,7 @@ import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import RequireAuth from '../../../components/RequireAuth';
 import AdminSubNav from '../../../components/AdminSubNav';
 import MemberTagPicker from '../../../components/MemberTagPicker';
-import { rotateImageFile } from '../../../lib/utils';
+import { rotateImageFile, decenniumLabel } from '../../../lib/utils';
 import PhotoTagSelector from '../../../components/PhotoTagSelector';
 import TagFilterPicker from '../../../components/TagFilterPicker';
 
@@ -13,6 +13,7 @@ const TABS = [
   { href: '/beheer/fotos', label: 'Overzicht', exact: true },
   { href: '/beheer/fotos/toevoegen', label: "+ Foto's toevoegen" },
   { href: '/beheer/fotos/tags', label: 'Tags' },
+  { href: '/beheer/fotos/sorteren', label: '🗓️ Op decennium sorteren' },
   { href: '/beheer/fotos/dubbels', label: '🔍 Dubbels' },
 ];
 
@@ -149,7 +150,7 @@ function FotosBeheerContent() {
               <div key={foto.id} style={{ border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden', background: colors.paperCard }}>
                 <ThumbOfFout url={foto.afbeeldingUrl} />
                 <div style={{ padding: '6px 8px', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, minHeight: 16 }}>
-                  {[foto.jaar, foto.locatie].filter(Boolean).join(' · ')}
+                  {[foto.jaar || (foto.decennium != null ? decenniumLabel(foto.decennium) : null), foto.locatie].filter(Boolean).join(' · ')}
                   {foto.ledenTags?.length > 0 && (
                     <div style={{ marginTop: 2 }}>{foto.ledenTags.map((t) => t.naam).join(', ')}</div>
                   )}
@@ -211,6 +212,7 @@ function ThumbOfFout({ url, klein, vierkant = true }) {
 
 function FotoBewerkKaart({ foto, onKlaar }) {
   const [jaar, setJaar] = useState(foto.jaar ? String(foto.jaar) : '');
+  const [decennium, setDecennium] = useState(foto.decennium != null ? String(foto.decennium) : '');
   const [locatie, setLocatie] = useState(foto.locatie || '');
   const [beschrijving, setBeschrijving] = useState(foto.beschrijving || '');
   const [ledenTags, setLedenTags] = useState(foto.ledenTags || []);
@@ -240,6 +242,7 @@ function FotoBewerkKaart({ foto, onKlaar }) {
     try {
       await PhotoFactory.updateTags(foto.id, {
         jaar: jaar ? parseInt(jaar, 10) : null,
+        decennium: decennium ? parseInt(decennium, 10) : null,
         locatie: locatie.trim(),
         beschrijving: beschrijving.trim(),
         ledenTags,
@@ -276,7 +279,15 @@ function FotoBewerkKaart({ foto, onKlaar }) {
       </div>
       <div style={{ flex: 1, minWidth: 240, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input type="number" value={jaar} onChange={(e) => setJaar(e.target.value)} placeholder="Jaar" style={{ ...inputStyle, width: 100 }} />
+          <input type="number" value={jaar} onChange={(e) => setJaar(e.target.value)} placeholder="Jaar" style={{ ...inputStyle, width: 90 }} />
+          <select value={decennium} onChange={(e) => setDecennium(e.target.value)} style={{ ...inputStyle, width: 120 }}>
+            <option value="">Decennium</option>
+            {[1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020].map((d) => (
+              <option key={d} value={d}>
+                {decenniumLabel(d)}
+              </option>
+            ))}
+          </select>
           <input type="text" value={locatie} onChange={(e) => setLocatie(e.target.value)} placeholder="Locatie" style={{ ...inputStyle, flex: 1 }} />
         </div>
         <textarea value={beschrijving} onChange={(e) => setBeschrijving(e.target.value)} placeholder="Extra info (optioneel)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
