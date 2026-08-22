@@ -626,3 +626,75 @@ Technisch: `components/CampMap.js` houdt de Leaflet-markers nu bij in een
 icoon van de betrokken marker aan, in plaats van de hele kaart (en dus
 alle markers) opnieuw op te bouwen — dat voorkomt een merkbare
 "flikker"/herlaad-hapering bij elke klik.
+
+## Bugfix: nieuwe naam taggen lukte niet op mobiel
+
+`MemberTagPicker` (gebruikt bij het taggen van personen op foto's en in
+leidingsploegen) vertrouwde voor een vrij getypte, nieuwe naam volledig op
+de Enter-toets. Op mobiel sturen virtuele toetsenborden de "Enter"/"Ga"-
+knop echter niet altijd betrouwbaar door als een `keydown`-event, waardoor
+er geen enkele manier was om zo'n naam toe te voegen.
+
+Er staat nu een expliciete **"+ Toevoegen"**-knop naast het invoerveld —
+Enter blijft ook gewoon werken (bv. op desktop), maar is niet langer de
+enige weg.
+
+## Foto's op decennium sorteren (nieuw)
+
+Als een exact jaartal niet lukt, kan een foto voortaan aan een
+**decennium** toegewezen worden, met een positie daarbinnen — zo ontstaat
+toch een soort tijdlijn.
+
+- **`/beheer/fotos/sorteren`** (nieuw tabblad): bovenaan een rij
+  "nog niet gesorteerde" foto's, daaronder de decennium-vakken
+  (jaren '40 t.e.m. het huidige decennium) waar je een foto naartoe kan
+  **slepen**. Klik op een vak om het uit te klappen: de foto's erin kan
+  je onderling **herschikken door te slepen** (vooraan = vroeger in dat
+  decennium), en per foto is er een klein jaar-veldje (voor wie het toch
+  nog exact weet), plus knopjes om naar het vorige/volgende decennium te
+  verplaatsen of het decennium weer te verwijderen.
+- **Nieuwe velden op een foto**: `decennium` (bv. `1970`) en
+  `decenniumPositie` (een oplopend volgnummer binnen dat decennium, enkel
+  gebruikt om te sorteren — geen zichtbaar getal).
+- **Sortering overal chronologisch**: `/fotos` toont foto's nu op
+  chronologische volgorde — exact jaartal waar gekend, anders een
+  geschatte positie op basis van decennium + plaats daarbinnen, en foto's
+  zonder enig tijdsgegeven helemaal achteraan. De reken-logica zit in
+  `lib/utils.js` → `berekenFotoSorteerJaar()`.
+- **Decennium ook los instelbaar** op de gewone bewerkschermen
+  (`/fotos/[id]` en het admin-bewerkscherm), als alternatief voor een
+  exact jaartal — verschijnt dan als "jaren '70" i.p.v. een jaartal, zowel
+  op de kaartjes als in de detailweergave.
+
+Firestore-rules: de publieke tag-bewerkingsregel staat nu ook
+`decennium`/`decenniumPositie` toe (met dezelfde "mag ontbreken op oudere
+foto's, maar moet het juiste type hebben"-aanpak als de andere velden).
+Opnieuw deployen voor dit actief wordt.
+
+## Op decennium sorteren: nu ook publiek
+
+De decennium-sorteertool bestaat nu ook voor bezoekers, op **`/fotos/sorteren`**
+(met een link vanaf `/fotos`), crowdsourced net als de andere foto-tags —
+geen login nodig.
+
+**Belangrijk verschil met de beheerversie**: de publieke versie gebruikt
+bewust **geen slepen**, maar **tikken**: eerst een foto aantikken
+(krijgt een groen kader), dan een decennium-vak aantikken om ze daar te
+plaatsen. Native sleep-en-neerzet (drag-and-drop) werkt namelijk niet
+betrouwbaar op mobiele toestellen, en aangezien dit publieke onderdeel
+net zo goed — zoniet vooral — op een telefoon gebruikt zal worden, was
+een tik-gebaseerde bediening de betere keuze. Binnen een uitgeklapt
+decennium kan je met kleine ↑/↓-knopjes de volgorde verfijnen (vroeger/
+later in dat decennium), en ◀▶✕ om naar een ander decennium te
+verplaatsen of de toewijzing weer te verwijderen. Het beheer-scherm
+(`/beheer/fotos/sorteren`) behoudt wel het slepen, aangezien dat in de
+praktijk vooral op een desktop gebruikt wordt.
+
+**Bugfix onderweg**: `PhotoFactory.zetDecennium` gebruikte intern een
+ongefilterde query (`getAllAdmin()`) om de volgende positie te bepalen —
+dat weigert Firestore voor een niet-ingelogde bezoeker zodra er ook
+niet-gepubliceerde foto's in de collectie zitten. Aangepast naar
+`getPublished()`, wat toch alles is wat nodig is om de positie te bepalen.
+
+Geen wijziging aan `firestore.rules` nodig — de bestaande publieke
+tag-bewerkingsregel liet `decennium`/`decenniumPositie` al toe.
