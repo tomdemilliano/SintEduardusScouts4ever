@@ -4,10 +4,12 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { PhotoFactory, PhotoTagFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
-import { rotateImageFile } from '../../lib/utils';
+import { rotateImageFile, decenniumLabel } from '../../lib/utils';
 import PublicNav from '../../components/PublicNav';
 import MemberTagPicker from '../../components/MemberTagPicker';
 import PhotoTagSelector from '../../components/PhotoTagSelector';
+
+const DECENNIA = [1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020];
 
 export default function FotoDetailPage() {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function FotoDetailPage() {
 
   const [bewerkModus, setBewerkModus] = useState(false);
   const [jaar, setJaar] = useState('');
+  const [decennium, setDecennium] = useState('');
   const [locatie, setLocatie] = useState('');
   const [beschrijving, setBeschrijving] = useState('');
   const [ledenTags, setLedenTags] = useState([]);
@@ -82,6 +85,7 @@ export default function FotoDetailPage() {
 
   const startBewerken = () => {
     setJaar(foto.jaar ? String(foto.jaar) : '');
+    setDecennium(foto.decennium != null ? String(foto.decennium) : '');
     setLocatie(foto.locatie || '');
     setBeschrijving(foto.beschrijving || '');
     setLedenTags(foto.ledenTags || []);
@@ -106,8 +110,10 @@ export default function FotoDetailPage() {
   const opslaan = async () => {
     setOpslaanBezig(true);
     try {
+      const decenniumWaarde = decennium ? parseInt(decennium, 10) : null;
       await PhotoFactory.updateTags(id, {
         jaar: jaar ? parseInt(jaar, 10) : null,
+        decennium: decenniumWaarde,
         locatie: locatie.trim(),
         beschrijving: beschrijving.trim(),
         ledenTags,
@@ -116,6 +122,7 @@ export default function FotoDetailPage() {
       setFoto((prev) => ({
         ...prev,
         jaar: jaar ? parseInt(jaar, 10) : null,
+        decennium: decenniumWaarde,
         locatie: locatie.trim(),
         beschrijving: beschrijving.trim(),
         ledenTags,
@@ -223,7 +230,7 @@ export default function FotoDetailPage() {
           <>
             {!bewerkModus ? (
               <div style={{ background: colors.paperCard, border: `1px solid ${colors.line}`, borderRadius: radius.card, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-                <LeesVeld label="Jaar" waarde={foto.jaar} />
+                <LeesVeld label="Jaar" waarde={foto.jaar || (foto.decennium != null ? decenniumLabel(foto.decennium) : '')} />
                 <LeesVeld label="Locatie" waarde={foto.locatie} />
                 <LeesVeld label="Wie staat erop?" waarde={(foto.ledenTags || []).map((t) => t.naam).join(', ')} />
                 <LeesVeld
@@ -281,7 +288,7 @@ export default function FotoDetailPage() {
                 </div>
 
                 <div>
-                  <Label>Jaar</Label>
+                  <Label>Jaar (indien gekend)</Label>
                   <input
                     type="number"
                     value={jaar}
@@ -289,6 +296,17 @@ export default function FotoDetailPage() {
                     placeholder="bv. 1978"
                     style={inputStyle}
                   />
+                </div>
+                <div>
+                  <Label>Decennium (als je het exacte jaar niet weet)</Label>
+                  <select value={decennium} onChange={(e) => setDecennium(e.target.value)} style={inputStyle}>
+                    <option value="">— geen —</option>
+                    {DECENNIA.map((d) => (
+                      <option key={d} value={d}>
+                        {decenniumLabel(d)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label>Locatie</Label>
