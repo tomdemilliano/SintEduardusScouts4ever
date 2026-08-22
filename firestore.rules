@@ -235,6 +235,8 @@ service cloud.firestore {
         // vóór deze velden werden toegevoegd) -- dan mag het gewoon
         // ontbreken; is het wél aanwezig, dan moet het type kloppen.
         && (!('jaar' in request.resource.data) || request.resource.data.jaar == null || request.resource.data.jaar is int)
+        && (!('decennium' in request.resource.data) || request.resource.data.decennium == null || request.resource.data.decennium is int)
+        && (!('decenniumPositie' in request.resource.data) || request.resource.data.decenniumPositie is number)
         && (!('locatie' in request.resource.data) || (request.resource.data.locatie is string && request.resource.data.locatie.size() < 200))
         && (!('beschrijving' in request.resource.data) || (request.resource.data.beschrijving is string && request.resource.data.beschrijving.size() < 500))
         && (!('ledenTags' in request.resource.data) || (request.resource.data.ledenTags is list && request.resource.data.ledenTags.size() < 30))
