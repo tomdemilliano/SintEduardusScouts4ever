@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { PhotoFactory, PhotoTagFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
+import { berekenFotoSorteerJaar, decenniumLabel } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
 import TagFilterPicker from '../components/TagFilterPicker';
 
@@ -18,9 +19,21 @@ export default function FotosPage() {
 
   useEffect(() => {
     Promise.all([PhotoFactory.getPublished(), PhotoTagFactory.getAll()]).then(([f, t]) => {
-      // Vaste, voorspelbare sortering (nieuwste eerst) i.p.v. de
-      // onbepaalde volgorde die Firestore standaard teruggeeft.
-      f.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      // Chronologisch waar mogelijk (exact jaar, of decennium + positie
+      // daarbinnen), foto's zonder enig tijdsgegeven helemaal achteraan —
+      // in plaats van gewoon op upload-datum.
+      const aantalPerDecennium = {};
+      f.forEach((foto) => {
+        if (foto.decennium != null) aantalPerDecennium[foto.decennium] = (aantalPerDecennium[foto.decennium] || 0) + 1;
+      });
+      f.sort((a, b) => {
+        const sa = berekenFotoSorteerJaar(a, aantalPerDecennium[a.decennium]);
+        const sb = berekenFotoSorteerJaar(b, aantalPerDecennium[b.decennium]);
+        if (sa == null && sb == null) return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        if (sa == null) return 1;
+        if (sb == null) return -1;
+        return sa - sb;
+      });
       setFotos(f);
       setAlleTags(t);
       setLoading(false);
@@ -102,6 +115,21 @@ export default function FotosPage() {
             }}
           >
             📷 Heb je zelf foto's om te delen? Voeg ze toe →
+          </Link>
+          <br />
+          <Link
+            href="/fotos/sorteren"
+            style={{
+              display: 'inline-block',
+              marginTop: 6,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              fontWeight: 600,
+              color: colors.forest,
+              textDecoration: 'none',
+            }}
+          >
+            🗓️ Help mee foto's op decennium te sorteren →
           </Link>
         </div>
 
@@ -261,7 +289,7 @@ function SidebarItem({ children, actief, onClick }) {
 
 function FotoKaart({ foto, alleTags }) {
   const [fout, setFout] = useState(false);
-  const getagd = foto.jaar || foto.locatie || (foto.ledenTags && foto.ledenTags.length > 0);
+  const getagd = foto.jaar || foto.decennium != null || foto.locatie || (foto.ledenTags && foto.ledenTags.length > 0);
   const tagNamen = (foto.tagIds || [])
     .map((id) => alleTags.find((t) => t.id === id)?.naam)
     .filter(Boolean);
@@ -321,9 +349,11 @@ function FotoKaart({ foto, alleTags }) {
             nog niet getagd
           </span>
         )}
-        {(foto.jaar || foto.locatie) && (
+        {(foto.jaar || foto.decennium != null || foto.locatie) && (
           <div style={{ padding: '6px 8px 2px', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted }}>
-            {[foto.jaar, foto.locatie].filter(Boolean).join(' · ')}
+            {[foto.jaar || (foto.decennium != null ? decenniumLabel(foto.decennium) : null), foto.locatie]
+              .filter(Boolean)
+              .join(' · ')}
           </div>
         )}
         {tagNamen.length > 0 && (
