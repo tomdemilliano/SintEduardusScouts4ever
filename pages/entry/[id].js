@@ -4,7 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { EntryFactory, PhotoFactory, LeidingFactory, TakFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
-import { toDishArray, werkingsjaarLabel } from '../../lib/utils';
+import { toDishArray, werkingsjaarLabel, decenniumLabel } from '../../lib/utils';
 
 export default function EntryDetailPage() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function EntryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [toonScan, setToonScan] = useState(false);
   const [ledenVolgorde, setLedenVolgorde] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   useEffect(() => {
     // De volgorde die de bezoeker op /vriendenboekje zag (met eventuele
@@ -52,6 +53,17 @@ export default function EntryDetailPage() {
   const huidigeIndex = ledenVolgorde.findIndex((e) => e.id === id);
   const vorigeLid = huidigeIndex > 0 ? ledenVolgorde[huidigeIndex - 1] : null;
   const volgendeLid = huidigeIndex >= 0 && huidigeIndex < ledenVolgorde.length - 1 ? ledenVolgorde[huidigeIndex + 1] : null;
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') setLightboxIndex(null);
+      if (e.key === 'ArrowLeft') setLightboxIndex((i) => (i > 0 ? i - 1 : i));
+      if (e.key === 'ArrowRight') setLightboxIndex((i) => (i < fotos.length - 1 ? i + 1 : i));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxIndex, fotos.length]);
 
   if (loading) {
     return (
@@ -382,20 +394,166 @@ export default function EntryDetailPage() {
                 📷 Foto's met {entry.naam.split(' ')[0]} ({fotos.length})
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8 }}>
-                {fotos.map((foto) => (
-                  <Link key={foto.id} href={`/fotos/${foto.id}`} style={{ display: 'block' }}>
+                {fotos.map((foto, i) => (
+                  <button
+                    key={foto.id}
+                    onClick={() => setLightboxIndex(i)}
+                    style={{ display: 'block', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+                  >
                     <img
                       src={foto.afbeeldingUrl}
                       alt=""
                       style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: radius.input, border: `1px solid ${colors.line}` }}
                     />
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {lightboxIndex !== null && fotos[lightboxIndex] && (
+        <FotoLightbox
+          foto={fotos[lightboxIndex]}
+          heeftVorige={lightboxIndex > 0}
+          heeftVolgende={lightboxIndex < fotos.length - 1}
+          onVorige={() => setLightboxIndex((i) => i - 1)}
+          onVolgende={() => setLightboxIndex((i) => i + 1)}
+          onSluiten={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
+}
+
+function FotoLightbox({ foto, heeftVorige, heeftVolgende, onVorige, onVolgende, onSluiten }) {
+  const [fout, setFout] = useState(false);
+  const jaarTekst = foto.jaar ? String(foto.jaar) : foto.decennium != null ? decenniumLabel(foto.decennium) : null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        background: 'rgba(20, 16, 10, 0.96)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onSluiten();
+      }}
+    >
+      {fout ? (
+        <div style={{ textAlign: 'center', color: colors.white, fontFamily: fonts.body }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🖼️</div>
+          <p>Deze afbeelding kan hier niet getoond worden.</p>
+        </div>
+      ) : (
+        <img
+          src={foto.afbeeldingUrl}
+          alt=""
+          onError={() => setFout(true)}
+          style={{ maxWidth: '94vw', maxHeight: '90vh', objectFit: 'contain', display: 'block' }}
+        />
+      )}
+
+      {(jaarTekst || foto.locatie) && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0, 0, 0, 0.5)',
+            borderRadius: radius.badge,
+            padding: '6px 14px',
+            fontFamily: fonts.body,
+            fontSize: 12,
+            color: colors.white,
+          }}
+        >
+          {[jaarTekst, foto.locatie].filter(Boolean).join(' · ')}
+        </div>
+      )}
+
+      {/* Iconen rechtsboven */}
+      <div style={{ position: 'fixed', top: 16, right: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <a
+          href={`/fotos/${foto.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Bewerken (opent in nieuw tabblad)"
+          aria-label="Bewerken (opent in nieuw tabblad)"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '7px 12px',
+            borderRadius: 999,
+            background: 'rgba(0, 0, 0, 0.5)',
+            color: colors.white,
+            fontFamily: fonts.body,
+            fontSize: 12,
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          ✏️ Bewerken ↗
+        </a>
+        <button
+          onClick={onSluiten}
+          aria-label="Sluiten"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.15)',
+            border: 'none',
+            color: colors.white,
+            fontSize: 16,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Vorige/volgende, enkel binnen de foto's van deze persoon */}
+      {heeftVorige && (
+        <button onClick={onVorige} aria-label="Vorige foto" style={lightboxPijlStyle('left')}>
+          ‹
+        </button>
+      )}
+      {heeftVolgende && (
+        <button onClick={onVolgende} aria-label="Volgende foto" style={lightboxPijlStyle('right')}>
+          ›
+        </button>
+      )}
+    </div>
+  );
+}
+
+function lightboxPijlStyle(kant) {
+  return {
+    position: 'fixed',
+    top: '50%',
+    [kant]: 16,
+    transform: 'translateY(-50%)',
+    width: 48,
+    height: 48,
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.15)',
+    border: 'none',
+    color: colors.white,
+    fontSize: 28,
+    lineHeight: '48px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    fontFamily: fonts.body,
+    fontWeight: 700,
+  };
 }
