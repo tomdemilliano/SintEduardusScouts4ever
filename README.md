@@ -718,3 +718,26 @@ grote, halfdoorzichtige pijlen om verder te bladeren — dat blijft ook
 gewoon **binnen** volledig scherm, en werkt ook via de pijltjestoetsen
 (die daar al voor bestonden). Klikken op de donkere achtergrond zelf
 sluit volledig scherm ook.
+
+## Foto-overzicht: gegroepeerd per decennium
+
+`/fotos` toont de (al chronologisch gesorteerde) foto's nu niet langer als
+één lange, ongestructureerde rij, maar **gegroepeerd per decennium**:
+
+- Tussen elk decennium staat een horizontale scheidingslijn met de titel
+  ("jaren '70") in het midden, zodat je meteen ziet waar het ene
+  decennium overgaat in het volgende.
+- Foto's zonder enig tijdsgegeven (geen jaar, geen decennium) krijgen een
+  eigen, duidelijk aparte groep **"🕓 Nog te dateren"** achteraan, i.p.v.
+  ergens tussen de andere foto's te verdwijnen.
+- Een compacte rij knopjes bovenaan (één per decennium/"onbekend", met
+  aantal) laat toe om **direct naar een decennium te springen** (zachte
+  scroll). Ik koos bewust voor deze aanpak i.p.v. een sleepbare
+  jaren-slider (zoals op de hoofdtijdlijn) — een simpele knoppenrij werkt
+  betrouwbaarder op mobiel en blijft in één oogopslag duidelijk. Zeg het
+  gerust als je toch liever de sleep-slider-stijl van `/tijdlijn` hier
+  ook wil, dat kan ik alsnog toevoegen.
+
+De bestaande filters (jaar, locatie, tags, naam, "nog niet getagd")
+blijven gewoon werken — de groepering gebeurt op de al gefilterde lijst,
+dus een filter kan het aantal decennium-groepen gewoon verkleinen.
