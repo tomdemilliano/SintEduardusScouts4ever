@@ -758,3 +758,24 @@ elk met de **naam** van de vorige/volgende persoon erop.
 - Kwam iemand rechtstreeks op een profiel terecht (bv. via een gedeelde
   link, zonder eerst het overzicht bezocht te hebben), dan verschijnen de
   knoppen gewoon niet — geen kapotte of lege navigatie.
+
+## Foto's op een profielpagina: lichtbak i.p.v. wegnavigeren
+
+Op `/entry/[id]` opende een klik op een foto voorheen `/fotos/[id]` — je
+verliet dus meteen het vriendenboekje, en kon enkel via de browser-
+"terug"-knop weer bij het profiel komen. Dat is nu een lichtbak
+(overlay) die **op de profielpagina zelf blijft**:
+
+- Klik op een foto → ze wordt groot getoond, met links/rechts-pijlen om
+  door **enkel de foto's van deze persoon** te bladeren (ook via de
+  pijltjestoetsen, en Escape om te sluiten).
+- Rechtsboven: een ✕ om te sluiten, en een **"✏️ Bewerken ↗"**-link die
+  wél naar de volledige foto-pagina gaat (waar je jaar/locatie/tags kan
+  aanpassen) — maar in een **nieuw browsertabblad**, zodat het profiel
+  op de achtergrond gewoon open blijft staan.
+- Onderaan verschijnt, indien gekend, kort het jaartal/decennium en de
+  locatie.
+
+Dit hergebruikt bewust hetzelfde visuele patroon (donkere overlay,
+ronde pijl-knoppen) als de volledig-scherm-weergave op `/fotos/[id]`,
+voor een herkenbare ervaring doorheen de site.
