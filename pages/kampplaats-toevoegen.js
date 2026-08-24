@@ -2,7 +2,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import Link from 'next/link';
-import { ExtraLocationFactory } from '../lib/dbSchema';
+import { ExtraLocationFactory, ActivityFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import PublicNav from '../components/PublicNav';
 
@@ -82,6 +82,11 @@ export default function KampplaatsToevoegenPage() {
         lat,
         lng,
         contactEmail: email.trim(),
+      });
+      ActivityFactory.log({
+        type: 'kampplaats',
+        actie: 'Nieuwe kampplaats voorgesteld',
+        omschrijving: `"${naam.trim()}" — wacht op goedkeuring.`,
       });
       setVerzonden(true);
     } catch (err) {
