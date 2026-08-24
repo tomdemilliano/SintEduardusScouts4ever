@@ -49,6 +49,20 @@ export default function VriendenboekjePage() {
   );
   const stubsGefilterd = stubs.filter((e) => e.naam.toLowerCase().includes(zoek.toLowerCase()));
 
+  // Onthoud de zichtbare volgorde (id + naam, zodat de detailpagina de
+  // naam van vorige/volgende meteen kan tonen zonder extra op te vragen),
+  // zodat de profielpagina van een lid ermee kan navigeren.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem('vb-leden-volgorde', JSON.stringify(gefilterd.map((e) => ({ id: e.id, naam: e.naam }))));
+    } catch (e) {
+      // sessionStorage niet beschikbaar (bv. privénavigatie) — geen probleem,
+      // de detailpagina toont dan gewoon geen vorige/volgende-navigatie.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gefilterd]);
+
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
       <Head>
