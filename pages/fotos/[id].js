@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { PhotoFactory, PhotoTagFactory } from '../../lib/dbSchema';
+import { PhotoFactory, PhotoTagFactory, ActivityFactory } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import { rotateImageFile, decenniumLabel } from '../../lib/utils';
 import PublicNav from '../../components/PublicNav';
@@ -102,6 +102,7 @@ export default function FotoDetailPage() {
       const bestand = await rotateImageFile(foto.afbeeldingUrl, 90);
       const upload = await PhotoFactory.replaceImage(id, bestand, foto.afbeeldingPath);
       setFoto((prev) => ({ ...prev, afbeeldingUrl: upload.url, afbeeldingPath: upload.path }));
+      ActivityFactory.log({ type: 'foto', actie: 'Foto gedraaid', itemId: id, omschrijving: 'Een bezoeker draaide een foto 90°.', afbeeldingUrl: upload.url });
     } catch (err) {
       alert('Draaien is mislukt, probeer opnieuw.');
       console.error('Fout bij het draaien van de foto:', err);
@@ -132,6 +133,13 @@ export default function FotoDetailPage() {
         tagIds,
       }));
       setBewerkModus(false);
+      ActivityFactory.log({
+        type: 'foto',
+        actie: 'Foto-gegevens bijgewerkt',
+        itemId: id,
+        omschrijving: `Jaar/locatie/leden/categorie aangepast door een bezoeker.`,
+        afbeeldingUrl: foto.afbeeldingUrl,
+      });
     } finally {
       setOpslaanBezig(false);
     }
@@ -142,6 +150,13 @@ export default function FotoDetailPage() {
     try {
       await PhotoFactory.requestDelete(id, verwijderReden.trim());
       setVerwijderVerzonden(true);
+      ActivityFactory.log({
+        type: 'foto',
+        actie: 'Verwijdering aangevraagd',
+        itemId: id,
+        omschrijving: verwijderReden.trim() ? `Reden: "${verwijderReden.trim()}"` : 'Geen reden opgegeven.',
+        afbeeldingUrl: foto.afbeeldingUrl,
+      });
     } finally {
       setVerwijderBezig(false);
     }
