@@ -698,3 +698,23 @@ niet-gepubliceerde foto's in de collectie zitten. Aangepast naar
 
 Geen wijziging aan `firestore.rules` nodig — de bestaande publieke
 tag-bewerkingsregel liet `decennium`/`decenniumPositie` al toe.
+
+## Foto-detailpagina: volledig scherm
+
+Op `/fotos/[id]` staat nu een ⛶-knopje rechtsonder de foto om ze
+**volledig scherm** te tonen (en ✕ of Escape om weer terug te gaan naar
+het gewone formaat).
+
+In volledig scherm staan rechtsboven, over de foto heen:
+- 📍 de locatie (enkel als die gekend is)
+- 👥 een badge met het aantal getagde personen — een klik opent een
+  overlay met hun namen onder elkaar
+- 🗓️ het jaartal, of anders het decennium, of anders "jaartal onbekend"
+  als er nog niets ingevuld is
+- ✕ om volledig scherm te sluiten
+
+Links en rechts verschijnen (enkel als er een vorige/volgende foto is)
+grote, halfdoorzichtige pijlen om verder te bladeren — dat blijft ook
+gewoon **binnen** volledig scherm, en werkt ook via de pijltjestoetsen
+(die daar al voor bestonden). Klikken op de donkere achtergrond zelf
+sluit volledig scherm ook.
