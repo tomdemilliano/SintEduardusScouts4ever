@@ -14,6 +14,19 @@ export default function EntryDetailPage() {
   const [leidingJaren, setLeidingJaren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toonScan, setToonScan] = useState(false);
+  const [ledenVolgorde, setLedenVolgorde] = useState([]);
+
+  useEffect(() => {
+    // De volgorde die de bezoeker op /vriendenboekje zag (met eventuele
+    // zoekfilter), zodat vorige/volgende hier diezelfde volgorde volgt.
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = sessionStorage.getItem('vb-leden-volgorde');
+      if (raw) setLedenVolgorde(JSON.parse(raw));
+    } catch (e) {
+      setLedenVolgorde([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -35,6 +48,10 @@ export default function EntryDetailPage() {
       }
     });
   }, [id]);
+
+  const huidigeIndex = ledenVolgorde.findIndex((e) => e.id === id);
+  const vorigeLid = huidigeIndex > 0 ? ledenVolgorde[huidigeIndex - 1] : null;
+  const volgendeLid = huidigeIndex >= 0 && huidigeIndex < ledenVolgorde.length - 1 ? ledenVolgorde[huidigeIndex + 1] : null;
 
   if (loading) {
     return (
@@ -68,6 +85,60 @@ export default function EntryDetailPage() {
         <Link href="/vriendenboekje" style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, textDecoration: 'none' }}>
           ← Terug naar het vriendenboekje
         </Link>
+
+        {(vorigeLid || volgendeLid) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 14 }}>
+            {vorigeLid ? (
+              <Link
+                href={`/entry/${vorigeLid.id}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 14px',
+                  borderRadius: radius.badge,
+                  border: `1px solid ${colors.line}`,
+                  background: colors.paperCard,
+                  color: colors.ink,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  textDecoration: 'none',
+                  maxWidth: '48%',
+                }}
+              >
+                <span style={{ flexShrink: 0 }}>‹</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vorigeLid.naam}</span>
+              </Link>
+            ) : (
+              <span />
+            )}
+            {volgendeLid ? (
+              <Link
+                href={`/entry/${volgendeLid.id}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 14px',
+                  borderRadius: radius.badge,
+                  border: `1px solid ${colors.line}`,
+                  background: colors.paperCard,
+                  color: colors.ink,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  textDecoration: 'none',
+                  maxWidth: '48%',
+                  marginLeft: 'auto',
+                }}
+              >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{volgendeLid.naam}</span>
+                <span style={{ flexShrink: 0 }}>›</span>
+              </Link>
+            ) : (
+              <span />
+            )}
+          </div>
+        )}
 
         <div
           style={{
