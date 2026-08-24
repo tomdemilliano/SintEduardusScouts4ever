@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { MijlpaalFactory } from '../lib/dbSchema';
+import { MijlpaalFactory, ActivityFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import PublicNav from '../components/PublicNav';
 
@@ -61,6 +61,11 @@ export default function MijlpaalToevoegenPage() {
         beschrijving: beschrijving.trim(),
         type,
         contactEmail: email.trim(),
+      });
+      ActivityFactory.log({
+        type: 'mijlpaal',
+        actie: 'Nieuwe mijlpaal voorgesteld',
+        omschrijving: `${jaarNum} — "${titel.trim()}" — wacht op goedkeuring.`,
       });
       setVerzonden(true);
     } catch (err) {
