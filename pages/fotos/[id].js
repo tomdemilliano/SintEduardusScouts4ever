@@ -21,6 +21,8 @@ export default function FotoDetailPage() {
   const [afbeeldingFout, setAfbeeldingFout] = useState(false);
 
   const [bewerkModus, setBewerkModus] = useState(false);
+  const [volledigScherm, setVolledigScherm] = useState(false);
+  const [toonGetagdOverlay, setToonGetagdOverlay] = useState(false);
   const [jaar, setJaar] = useState('');
   const [decennium, setDecennium] = useState('');
   const [locatie, setLocatie] = useState('');
@@ -78,10 +80,11 @@ export default function FotoDetailPage() {
     const handler = (e) => {
       if (e.key === 'ArrowLeft' && vorigeFoto) router.push(`/fotos/${vorigeFoto.id}`);
       if (e.key === 'ArrowRight' && volgendeFoto) router.push(`/fotos/${volgendeFoto.id}`);
+      if (e.key === 'Escape' && volledigScherm) setVolledigScherm(false);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [vorigeFoto, volgendeFoto, router]);
+  }, [vorigeFoto, volgendeFoto, router, volledigScherm]);
 
   const startBewerken = () => {
     setJaar(foto.jaar ? String(foto.jaar) : '');
@@ -194,6 +197,29 @@ export default function FotoDetailPage() {
             <img src={foto.afbeeldingUrl} alt="" onError={() => setAfbeeldingFout(true)} style={{ width: '100%', display: 'block' }} />
           )}
 
+          {!afbeeldingFout && (
+            <button
+              onClick={() => setVolledigScherm(true)}
+              aria-label="Volledig scherm"
+              title="Volledig scherm"
+              style={{
+                position: 'absolute',
+                bottom: 10,
+                right: 10,
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                background: 'rgba(44, 36, 25, 0.55)',
+                color: colors.white,
+                border: 'none',
+                fontSize: 16,
+                cursor: 'pointer',
+              }}
+            >
+              ⛶
+            </button>
+          )}
+
           {vorigeFoto && (
             <Link
               href={`/fotos/${vorigeFoto.id}`}
@@ -218,6 +244,25 @@ export default function FotoDetailPage() {
           <p style={{ textAlign: 'center', fontFamily: fonts.body, fontSize: 12, color: colors.inkMuted, margin: '0 0 20px' }}>
             Foto {huidigeIndex + 1} van {alleFotos.length}
           </p>
+        )}
+
+        {volledigScherm && (
+          <VolledigSchermOverlay
+            foto={foto}
+            alleTags={alleTags}
+            vorigeFoto={vorigeFoto}
+            volgendeFoto={volgendeFoto}
+            toonGetagdOverlay={toonGetagdOverlay}
+            setToonGetagdOverlay={setToonGetagdOverlay}
+            onSluiten={() => {
+              setVolledigScherm(false);
+              setToonGetagdOverlay(false);
+            }}
+            onNavigeer={(nieuwId) => {
+              setToonGetagdOverlay(false);
+              router.push(`/fotos/${nieuwId}`);
+            }}
+          />
         )}
 
         {verwijderVerzonden ? (
@@ -470,6 +515,176 @@ const inputStyle = {
   color: colors.ink,
   boxSizing: 'border-box',
 };
+
+function VolledigSchermOverlay({ foto, alleTags, vorigeFoto, volgendeFoto, toonGetagdOverlay, setToonGetagdOverlay, onSluiten, onNavigeer }) {
+  const [fout, setFout] = useState(false);
+  const tagNamen = (foto.tagIds || [])
+    .map((tid) => alleTags.find((t) => t.id === tid)?.naam)
+    .filter(Boolean);
+  const jaarTekst = foto.jaar ? String(foto.jaar) : foto.decennium != null ? decenniumLabel(foto.decennium) : 'jaartal onbekend';
+  const aantalGetagd = (foto.ledenTags || []).length;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        background: 'rgba(20, 16, 10, 0.96)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={(e) => {
+        // enkel sluiten bij een klik op de donkere achtergrond zelf, niet op de foto/iconen
+        if (e.target === e.currentTarget) onSluiten();
+      }}
+    >
+      {fout ? (
+        <div style={{ textAlign: 'center', color: colors.white, fontFamily: fonts.body }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🖼️</div>
+          <p>Deze afbeelding kan hier niet getoond worden.</p>
+        </div>
+      ) : (
+        <img
+          src={foto.afbeeldingUrl}
+          alt=""
+          onError={() => setFout(true)}
+          style={{ maxWidth: '94vw', maxHeight: '94vh', objectFit: 'contain', display: 'block' }}
+        />
+      )}
+
+      {/* Icoontjes rechtsboven */}
+      <div style={{ position: 'fixed', top: 16, right: 16, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        {foto.locatie && (
+          <div style={overlayIconStyle()}>
+            <span style={{ fontSize: 15 }}>📍</span>
+            <span style={{ fontFamily: fonts.body, fontSize: 11, color: colors.white, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {foto.locatie}
+            </span>
+          </div>
+        )}
+
+        {aantalGetagd > 0 && (
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setToonGetagdOverlay((v) => !v)}
+              style={{ ...overlayIconStyle(), border: 'none', cursor: 'pointer' }}
+              aria-label="Wie staat erop?"
+            >
+              <span style={{ fontSize: 15 }}>👥</span>
+              <span
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: colors.ink,
+                  background: colors.campfire,
+                  borderRadius: 999,
+                  minWidth: 16,
+                  height: 16,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                }}
+              >
+                {aantalGetagd}
+              </span>
+            </button>
+            {toonGetagdOverlay && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  background: colors.white,
+                  borderRadius: radius.card,
+                  padding: '10px 14px',
+                  minWidth: 150,
+                  boxShadow: '0 6px 18px rgba(0,0,0,0.4)',
+                }}
+              >
+                {(foto.ledenTags || []).map((t, i) => (
+                  <div key={i} style={{ fontFamily: fonts.body, fontSize: 13, color: colors.ink, padding: '3px 0' }}>
+                    {t.naam}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={overlayIconStyle()}>
+          <span style={{ fontSize: 13 }}>🗓️</span>
+          <span style={{ fontFamily: fonts.body, fontSize: 11, color: colors.white, whiteSpace: 'nowrap' }}>{jaarTekst}</span>
+        </div>
+
+        <button
+          onClick={onSluiten}
+          aria-label="Volledig scherm sluiten"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.15)',
+            border: 'none',
+            color: colors.white,
+            fontSize: 16,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Vorige/volgende */}
+      {vorigeFoto && (
+        <button onClick={() => onNavigeer(vorigeFoto.id)} aria-label="Vorige foto" style={overlayNavPijlStyle('left')}>
+          ‹
+        </button>
+      )}
+      {volgendeFoto && (
+        <button onClick={() => onNavigeer(volgendeFoto.id)} aria-label="Volgende foto" style={overlayNavPijlStyle('right')}>
+          ›
+        </button>
+      )}
+    </div>
+  );
+}
+
+function overlayIconStyle() {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '6px 10px',
+    borderRadius: 999,
+    background: 'rgba(0, 0, 0, 0.5)',
+  };
+}
+
+function overlayNavPijlStyle(kant) {
+  return {
+    position: 'fixed',
+    top: '50%',
+    [kant]: 16,
+    transform: 'translateY(-50%)',
+    width: 48,
+    height: 48,
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.15)',
+    border: 'none',
+    color: colors.white,
+    fontSize: 28,
+    lineHeight: '48px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    fontFamily: fonts.body,
+    fontWeight: 700,
+  };
+}
 
 function navPijlStyle(kant) {
   return {
