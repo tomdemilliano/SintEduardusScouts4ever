@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { PhotoFactory } from '../lib/dbSchema';
+import { PhotoFactory, ActivityFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import { resizeImageFile } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
@@ -76,6 +76,11 @@ export default function FotoToevoegenPage() {
         { contactEmail: email.trim() },
         (i, status) => updateStatus(i, status === 'bezig' ? 'uploaden' : status)
       );
+      ActivityFactory.log({
+        type: 'foto',
+        actie: `${aantal} nieuwe foto${aantal === 1 ? '' : "'s"} ingediend`,
+        omschrijving: 'Wacht op goedkeuring door de beheerder.',
+      });
       setVerzonden(aantal);
     } catch (err) {
       setFoutmelding('Er ging iets mis bij het versturen. Probeer het straks nog eens.');
