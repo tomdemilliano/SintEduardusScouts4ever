@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { EntryFactory, KentekenFactory, MijlpaalFactory, TakFactory, LeidingFactory } from '../lib/dbSchema';
+import { EntryFactory, KentekenFactory, MijlpaalFactory, TakFactory, LeidingFactory, ActivityFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import { parsePeriodRange, werkingsjaarLabel, huidigWerkingsjaarStart } from '../lib/utils';
 import PublicNav from '../components/PublicNav';
@@ -142,6 +142,13 @@ export default function TijdlijnPage() {
     setLeidingOpslaanBezig(true);
     try {
       await LeidingFactory.set(geselecteerdeLeiding.takId, geselecteerdeLeiding.werkingsjaarStart, leidingBewerkLeden);
+      const takNaam = takken.find((t) => t.id === geselecteerdeLeiding.takId)?.naam || '(onbekende tak)';
+      ActivityFactory.log({
+        type: 'leiding',
+        actie: 'Leidingsploeg bijgewerkt',
+        itemId: `${geselecteerdeLeiding.takId}_${geselecteerdeLeiding.werkingsjaarStart}`,
+        omschrijving: `${takNaam} ${werkingsjaarLabel(geselecteerdeLeiding.werkingsjaarStart)}`,
+      });
       load();
       setLeidingBewerkModus(false);
     } finally {
@@ -155,6 +162,13 @@ export default function TijdlijnPage() {
     setNieuwOpslaanBezig(true);
     try {
       await LeidingFactory.set(nieuwTakId, jaarNum, nieuwLeden);
+      const takNaam = takken.find((t) => t.id === nieuwTakId)?.naam || '(onbekende tak)';
+      ActivityFactory.log({
+        type: 'leiding',
+        actie: 'Nieuwe leidingsploeg toegevoegd',
+        itemId: `${nieuwTakId}_${jaarNum}`,
+        omschrijving: `${takNaam} ${werkingsjaarLabel(jaarNum)}`,
+      });
       load();
       setNieuwLeden([]);
       setToevoegFormOpen(false);
