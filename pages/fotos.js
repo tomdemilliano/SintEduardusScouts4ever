@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { PhotoFactory, PhotoTagFactory } from '../lib/dbSchema';
@@ -84,6 +84,31 @@ export default function FotosPage() {
       // de detailpagina valt dan gewoon terug op de standaardvolgorde.
     }
   }, [gefilterd]);
+
+  // Groepeer de (al chronologisch gesorteerde) foto's per decennium, met
+  // een aparte groep voor foto's zonder enig tijdsgegeven -- zo ontstaat
+  // een echte tijdlijn-indruk i.p.v. één lange, ongestructureerde rij.
+  const groepen = useMemo(() => {
+    const map = new Map(); // decennium (of 'onbekend') -> foto's, in volgorde van eerste voorkomen
+    gefilterd.forEach((foto) => {
+      let sleutel;
+      if (foto.jaar) sleutel = Math.floor(foto.jaar / 10) * 10;
+      else if (foto.decennium != null) sleutel = foto.decennium;
+      else sleutel = 'onbekend';
+      if (!map.has(sleutel)) map.set(sleutel, []);
+      map.get(sleutel).push(foto);
+    });
+    return Array.from(map.entries()).map(([sleutel, lijst]) => ({
+      sleutel,
+      titel: sleutel === 'onbekend' ? '🕓 Nog te dateren' : decenniumLabel(sleutel),
+      fotos: lijst,
+    }));
+  }, [gefilterd]);
+
+  const sectionRefs = useRef({});
+  const springNaar = (sleutel) => {
+    sectionRefs.current[sleutel]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
@@ -217,17 +242,64 @@ export default function FotosPage() {
                 </button>
               </div>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                  gap: 12,
-                }}
-              >
-                {gefilterd.map((foto) => (
-                  <FotoKaart key={foto.id} foto={foto} alleTags={alleTags} />
-                ))}
-              </div>
+              {/* Snel naar een decennium springen */}
+              {groepen.length > 1 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+                  {groepen.map((groep) => (
+                    <button
+                      key={groep.sleutel}
+                      onClick={() => springNaar(groep.sleutel)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: radius.badge,
+                        border: `1px solid ${groep.sleutel === 'onbekend' ? colors.inkMuted : colors.line}`,
+                        background: colors.white,
+                        color: groep.sleutel === 'onbekend' ? colors.inkMuted : colors.ink,
+                        fontFamily: fonts.body,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {groep.sleutel === 'onbekend' ? '🕓 onbekend' : decenniumLabel(groep.sleutel)}
+                      <span style={{ color: colors.inkMuted, fontWeight: 500 }}> ({groep.fotos.length})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {groepen.map((groep) => (
+                <div key={groep.sleutel} ref={(el) => (sectionRefs.current[groep.sleutel] = el)} style={{ marginBottom: 28, scrollMarginTop: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                    <div style={{ flex: 1, height: 1, background: colors.line }} />
+                    <div
+                      style={{
+                        fontFamily: fonts.display,
+                        fontSize: groep.sleutel === 'onbekend' ? 14 : 18,
+                        fontWeight: 700,
+                        color: groep.sleutel === 'onbekend' ? colors.inkMuted : colors.forest,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {groep.titel}
+                    </div>
+                    <div style={{ flex: 1, height: 1, background: colors.line }} />
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                      gap: 12,
+                    }}
+                  >
+                    {groep.fotos.map((foto) => (
+                      <FotoKaart key={foto.id} foto={foto} alleTags={alleTags} />
+                    ))}
+                  </div>
+                </div>
+              ))}
 
               {gefilterd.length === 0 && (
                 <p style={{ textAlign: 'center', fontFamily: fonts.body, color: colors.inkMuted }}>
