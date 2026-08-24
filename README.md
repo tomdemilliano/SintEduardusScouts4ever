@@ -779,3 +779,41 @@ verliet dus meteen het vriendenboekje, en kon enkel via de browser-
 Dit hergebruikt bewust hetzelfde visuele patroon (donkere overlay,
 ronde pijl-knoppen) als de volledig-scherm-weergave op `/fotos/[id]`,
 voor een herkenbare ervaring doorheen de site.
+
+## Activiteitenlog: zicht op publieke wijzigingen (nieuw)
+
+`/beheer/activiteit` (nieuw, ook in de hoofdnavigatie) geeft je als
+beheerder overzicht over wat bezoekers via crowdsourcing aanpassen —
+zonder dat er ergens een account of persoonsgegeven van de bezoeker bij
+wordt bijgehouden, enkel *wat* er veranderde en *wanneer*.
+
+**Wat wordt gelogd** (telkens enkel bij een publieke, niet-ingelogde
+actie — jouw eigen bewerkingen als beheerder tellen hier bewust niet in
+mee):
+- Foto's: tags bijgewerkt (jaar/locatie/leden/categorie), gedraaid,
+  verwijdering aangevraagd, nieuwe foto's ingediend
+- Leidingsploegen: nieuw toegevoegd of bijgewerkt
+- Kampplaatsen: nieuwe plek voorgesteld
+- Mijlpalen: nieuwe mijlpaal voorgesteld
+- Vriendenboekje: nieuw formulier ingediend, of een stub-fiche gekoppeld
+  via "ben jij misschien X?"
+
+**Wat je op de pagina ziet**:
+- Tellingen vandaag / deze week / deze maand / all-time
+- Een balkje per dag voor de laatste 30 dagen (zelfde stijl als
+  `/beheer/statistieken`), om de crowdsourcing-activiteit over tijd te
+  volgen
+- Verdeling per onderdeel (foto's, leiding, kampplaatsen, ...)
+- Een filterbare, recente activiteitenlijst — bij foto's en
+  vriendenboekje-fiches staat er een "bekijken →"-link (opent in een
+  nieuw tabblad) om de gewijzigde foto/fiche meteen te controleren
+
+**Technisch**: nieuwe Firestore-collectie `activiteiten`
+(`ActivityFactory` in `lib/dbSchema.js`). Publiek mag enkel *aanmaken*
+(met beperkte veldgroottes, geen IP/naam van de bezoeker); enkel de
+beheerder mag het logboek lezen of opruimen. Het loggen zelf faalt nooit
+zichtbaar voor de bezoeker (een mislukte log-poging wordt stilletjes
+genegeerd, de eigenlijke actie van de bezoeker gaat gewoon door).
+
+**Belangrijk**: `firestore.rules` moet opnieuw gedeployed worden voor de
+nieuwe `activiteiten`-collectie actief wordt.
