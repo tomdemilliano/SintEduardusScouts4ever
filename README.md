@@ -741,3 +741,20 @@ sluit volledig scherm ook.
 De bestaande filters (jaar, locatie, tags, naam, "nog niet getagd")
 blijven gewoon werken — de groepering gebeurt op de al gefilterde lijst,
 dus een filter kan het aantal decennium-groepen gewoon verkleinen.
+
+## Vriendenboekje: vorige/volgende navigatie
+
+Op een profielpagina (`/entry/[id]`) staan nu, net onder de "terug naar
+het vriendenboekje"-link, twee knoppen om door de leden te bladeren —
+elk met de **naam** van de vorige/volgende persoon erop.
+
+- Bij het **eerste lid** verschijnt enkel de "volgende"-knop (rechts),
+  bij het **laatste lid** enkel "vorige" (links) — er is dan simpelweg
+  niets om naartoe te navigeren aan die kant.
+- De volgorde volgt exact wat de bezoeker op `/vriendenboekje` zag,
+  inclusief een eventuele zoekfilter — zelfde patroon als de
+  vorige/volgende-navigatie die al bij de foto's bestond
+  (`sessionStorage`, ditmaal onder de sleutel `vb-leden-volgorde`).
+- Kwam iemand rechtstreeks op een profiel terecht (bv. via een gedeelde
+  link, zonder eerst het overzicht bezocht te hebben), dan verschijnen de
+  knoppen gewoon niet — geen kapotte of lege navigatie.
