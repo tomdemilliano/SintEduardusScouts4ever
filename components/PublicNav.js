@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { colors, fonts } from '../lib/theme';
+import { colors, fonts, radius } from '../lib/theme';
 
 const LINKS = [
   { href: '/vriendenboekje', label: 'Vriendenboekje', icon: '📖' },
@@ -24,9 +25,9 @@ const RADIUS = [
 ];
 const ROTATIE = [-1.5, 1, -1, 1.5, -0.5];
 
-function Kampvuurtje() {
+function Kampvuurtje({ maat = 30 }) {
   return (
-    <svg width="30" height="30" viewBox="0 0 30 30" style={{ flexShrink: 0 }}>
+    <svg width={maat} height={maat} viewBox="0 0 30 30" style={{ flexShrink: 0 }}>
       <path d="M6 24 L14 12" stroke={colors.forestDark} strokeWidth="2" strokeLinecap="round" />
       <path d="M24 24 L16 12" stroke={colors.forestDark} strokeWidth="2" strokeLinecap="round" />
       <path
@@ -56,6 +57,9 @@ function SiteHeader() {
 /**
  * De losse rij navigatieknoppen, herbruikbaar los van de header — bv. op de
  * landingspagina, die de header/logo al op zijn eigen, grotere manier toont.
+ * Dit is de volledige, "losse knoppen"-weergave — op een klein scherm wordt
+ * dit binnen PublicNav vervangen door een compacte balk met uitklapmenu
+ * (zie hieronder), maar deze losse export blijft bruikbaar waar gewenst.
  */
 export function NavButtons({ style }) {
   const router = useRouter();
@@ -119,33 +123,135 @@ export function NavButtons({ style }) {
   );
 }
 
-/** Kleine, altijd aanwezige link naar het contactformulier — verschijnt op elke pagina die PublicNav of NavButtons gebruikt. */
+/**
+ * Vast, klein icoontje rechtsboven in beeld (blijft ook zichtbaar bij het
+ * scrollen) — vervangt de vroegere, tekst-link onderaan de navigatie, die
+ * op mobiel onnodig veel plaats innam.
+ */
 export function ContactLink() {
   return (
-    <div style={{ textAlign: 'center', marginTop: 6 }}>
-      <Link
-        href="/contact"
-        style={{
-          fontFamily: fonts.body,
-          fontSize: 11,
-          color: colors.inkMuted,
-          textDecoration: 'underline',
-          textDecorationColor: colors.line,
-        }}
-      >
-        ✉️ Contacteer de websitebeheerder
-      </Link>
-    </div>
+    <Link
+      href="/contact"
+      title="Contacteer de websitebeheerder"
+      aria-label="Contacteer de websitebeheerder"
+      style={{
+        position: 'fixed',
+        top: 12,
+        right: 12,
+        zIndex: 50,
+        width: 34,
+        height: 34,
+        borderRadius: '50%',
+        background: colors.paperCard,
+        border: `1.5px solid ${colors.line}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 15,
+        textDecoration: 'none',
+        boxShadow: '0 2px 6px rgba(44, 36, 25, 0.12)',
+      }}
+    >
+      ✉️
+    </Link>
   );
 }
 
 /** Header (logo) + navigatieknoppen samen — gebruikt op alle pagina's behalve de landingspagina. */
 export default function PublicNav() {
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const sluit = () => setMenuOpen(false);
+    router.events.on('routeChangeStart', sluit);
+    return () => router.events.off('routeChangeStart', sluit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div>
-      <SiteHeader />
-      <NavButtons />
       <ContactLink />
+
+      {/* Volledige weergave — vanaf een breder scherm */}
+      <div className="vb-nav-groot">
+        <SiteHeader />
+        <NavButtons />
+      </div>
+
+      {/* Compacte balk + uitklapmenu — enkel op een smal scherm */}
+      <div className="vb-nav-klein">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 44px 12px 16px' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <Kampvuurtje maat={26} />
+            <span style={{ fontFamily: fonts.display, fontSize: 15, fontWeight: 700, color: colors.ink }}>
+              Sint-Eduardusscouts
+            </span>
+          </Link>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? 'Menu sluiten' : 'Menu openen'}
+            aria-expanded={menuOpen}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: radius.input,
+              border: `1.5px solid ${colors.line}`,
+              background: colors.paperCard,
+              fontSize: 16,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            {menuOpen ? '✕' : '☰'}
+          </button>
+        </div>
+
+        {menuOpen && (
+          <div style={{ padding: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {LINKS.map((link) => {
+              const active = router.pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    borderRadius: radius.input,
+                    fontFamily: fonts.body,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    color: active ? colors.white : colors.ink,
+                    background: active ? colors.forest : colors.paperCard,
+                    border: `1.5px solid ${active ? colors.forest : colors.line}`,
+                  }}
+                >
+                  <span aria-hidden="true">{link.icon}</span>
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <style jsx global>{`
+        .vb-nav-klein {
+          display: none;
+        }
+        @media (max-width: 680px) {
+          .vb-nav-groot {
+            display: none;
+          }
+          .vb-nav-klein {
+            display: block;
+          }
+        }
+      `}</style>
     </div>
   );
 }
