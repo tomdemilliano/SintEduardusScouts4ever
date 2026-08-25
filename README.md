@@ -817,3 +817,28 @@ genegeerd, de eigenlijke actie van de bezoeker gaat gewoon door).
 
 **Belangrijk**: `firestore.rules` moet opnieuw gedeployed worden voor de
 nieuwe `activiteiten`-collectie actief wordt.
+
+## Mobiele navigatie: compacter + contact-icoontje vast rechtsboven
+
+`components/PublicNav.js` toont voortaan twee volledig aparte
+weergaven, gestuurd via CSS media query (geen JS-schermdetectie, om een
+hydration-mismatch te vermijden — zelfde aanpak als eerder bij de
+tag-sidebar op `/fotos`):
+
+- **Breder scherm (> 680px)**: ongewijzigd — logo + volledige rij
+  navigatieknoppen, zoals voorheen.
+- **Smal scherm (≤ 680px)**: een **compacte balk** (klein kampvuurtje +
+  "Sint-Eduardusscouts", geen grote logo-afbeelding meer) met een
+  **☰-knop** die een uitklapmenu opent met alle paginalinks eronder. Dat
+  menu sluit vanzelf zodra je op een link klikt (of ergens anders
+  navigeert). Dit scheelt op mobiel al gauw de helft van de ruimte die de
+  header + navigatie voorheen innamen.
+
+**Contact verplaatst naar een vast icoontje**: de tekstlink onderaan de
+navigatie is vervangen door een klein ✉️-icoontje, **vast rechtsboven in
+beeld** (`position: fixed`, blijft dus ook zichtbaar bij het scrollen) —
+op zowel pc als mobiel, en op elke pagina die `PublicNav` gebruikt. De
+landingspagina (die zijn eigen, grotere hero-header heeft en niet
+`PublicNav` maar `NavButtons` los gebruikt) kreeg het icoontje er apart
+bij, naast het bestaande, uitgebreidere contact-kader dat daar al stond
+voor andere scoutsgroepen.
