@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { colors, fonts, fontImports } from '../lib/theme';
-import { NavButtons } from '../components/PublicNav';
+import { NavButtons, ContactLink } from '../components/PublicNav';
 
 export default function LandingPage() {
   return (
@@ -10,6 +10,8 @@ export default function LandingPage() {
         <link rel="stylesheet" href={fontImports} />
         <title>Vrienden van Sint-Eduardusscouts</title>
       </Head>
+
+      <ContactLink />
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '64px 20px 100px', textAlign: 'center' }}>
         <img
