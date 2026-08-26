@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { EntryFactory, KentekenFactory, MijlpaalFactory, TakFactory, LeidingFactory, ActivityFactory } from '../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../lib/theme';
 import { parsePeriodRange, werkingsjaarLabel, huidigWerkingsjaarStart } from '../lib/utils';
@@ -12,6 +13,7 @@ const PX_PER_JAAR = 22;
 const STARTJAAR = 1944;
 
 export default function TijdlijnPage() {
+  const router = useRouter();
   const [rijen, setRijen] = useState([]);
   const [zonderJaar, setZonderJaar] = useState([]);
   const [kentekens, setKentekens] = useState([]);
@@ -129,6 +131,23 @@ export default function TijdlijnPage() {
     setGeselecteerdeLeiding({ takId, werkingsjaarStart });
     setLeidingBewerkModus(false);
   };
+
+  // Laat toe om rechtstreeks naar een specifieke leidingsploeg te linken,
+  // bv. vanaf het activiteitenlog: /tijdlijn?leidingTak=xxx&leidingJaar=1978
+  useEffect(() => {
+    if (!router.isReady || loading) return;
+    const { leidingTak, leidingJaar } = router.query;
+    if (leidingTak && leidingJaar) {
+      const jaarNum = parseInt(leidingJaar, 10);
+      if (leidingLijst.some((l) => l.takId === leidingTak && l.werkingsjaarStart === jaarNum)) {
+        openLeidingDetail(leidingTak, jaarNum);
+        setTimeout(() => {
+          document.getElementById('vb-leidingsploegen-vak')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query, loading, leidingLijst]);
 
   const startLeidingBewerken = () => {
     const item = leidingLijst.find(
@@ -471,6 +490,7 @@ export default function TijdlijnPage() {
             {/* Apart vak: leidingsploegen per tak */}
             {takken.length > 0 && (
               <div
+                id="vb-leidingsploegen-vak"
                 style={{
                   marginTop: 12,
                   background: colors.paperCard,
