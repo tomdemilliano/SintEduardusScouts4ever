@@ -68,6 +68,11 @@ function EditEntryContent() {
     router.push('/beheer/vriendenboek');
   };
 
+  const handleKeurGoed = async () => {
+    await EntryFactory.keurGoed(id);
+    router.push('/beheer/vriendenboek');
+  };
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'transparent', padding: 48 }}>
@@ -104,7 +109,7 @@ function EditEntryContent() {
           <h2 style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 600, color: colors.ink, margin: 0 }}>
             {entry.naam || '(naamloos)'} bewerken
           </h2>
-          {entry.status !== 'published' && (
+          {entry.status === 'draft' && (
             <button
               onClick={handlePublish}
               disabled={!koppelingBevestigd}
@@ -122,6 +127,26 @@ function EditEntryContent() {
               }}
             >
               Publiceren
+            </button>
+          )}
+          {entry.status === 'published' && entry.goedgekeurd === false && (
+            <button
+              onClick={handleKeurGoed}
+              disabled={!koppelingBevestigd}
+              title={!koppelingBevestigd ? 'Bevestig eerst de koppeling hieronder' : undefined}
+              style={{
+                padding: '9px 18px',
+                borderRadius: radius.badge,
+                border: 'none',
+                background: koppelingBevestigd ? colors.forest : colors.inkMuted,
+                color: colors.white,
+                fontFamily: fonts.body,
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: koppelingBevestigd ? 'pointer' : 'not-allowed',
+              }}
+            >
+              ✓ Goedkeuren
             </button>
           )}
         </div>
