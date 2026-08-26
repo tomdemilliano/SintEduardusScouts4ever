@@ -217,6 +217,24 @@ export default function VriendenboekjePage() {
                     <div style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted }}>
                       {entry.periode}
                     </div>
+                    {entry.goedgekeurd === false && (
+                      <div
+                        style={{
+                          display: 'inline-block',
+                          marginTop: 6,
+                          fontFamily: fonts.body,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: colors.campfire,
+                          background: colors.campfireLight,
+                          border: `1px solid ${colors.campfire}`,
+                          borderRadius: radius.badge,
+                          padding: '2px 9px',
+                        }}
+                      >
+                        ⏳ Wacht op goedkeuring
+                      </div>
+                    )}
                     {fotoAantallen[entry.id] > 0 && (
                       <div
                         style={{
