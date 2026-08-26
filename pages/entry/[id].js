@@ -200,6 +200,26 @@ export default function EntryDetailPage() {
                 </p>
               )}
             </div>
+            {entry.status === 'published' && (
+              <Link
+                href={`/entry/${id}/wijzigen`}
+                style={{
+                  flexShrink: 0,
+                  padding: '7px 14px',
+                  borderRadius: radius.badge,
+                  border: `1px solid ${colors.line}`,
+                  background: colors.paperCard,
+                  color: colors.ink,
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                ✏️ Wijziging voorstellen
+              </Link>
+            )}
             {entry.totemnaam && (
               <div
                 style={{
