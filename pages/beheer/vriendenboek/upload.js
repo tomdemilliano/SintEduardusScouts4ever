@@ -10,6 +10,7 @@ const TABS = [
   { href: '/beheer/vriendenboek', label: 'Overzicht', exact: true },
   { href: '/beheer/vriendenboek/upload', label: '+ Eén scan' },
   { href: '/beheer/vriendenboek/bulk-upload', label: '+ Meerdere scans' },
+  { href: '/beheer/vriendenboek/wijzigingen', label: '✏️ Wijzigingsvoorstellen' },
 ];
 
 export default function UploadPage() {
