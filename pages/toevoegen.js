@@ -30,6 +30,7 @@ export default function ToevoegenPage() {
   const [versturen, setVersturen] = useState(false);
   const [foutmelding, setFoutmelding] = useState(null);
   const [verzonden, setVerzonden] = useState(false);
+  const [nieuwEntryId, setNieuwEntryId] = useState(null);
 
   // "Ben jij misschien X?" -- controle op bestaande stub-fiches
   const [kandidaten, setKandidaten] = useState([]);
@@ -86,7 +87,8 @@ export default function ToevoegenPage() {
       if (gekozenStub) {
         // Bevestigd "ja, dat ben ik" -- de bestaande stub-fiche bijwerken
         // i.p.v. een nieuwe, dubbele entry aan te maken. De beheerder moet
-        // deze koppeling nadien nog expliciet bevestigen.
+        // deze koppeling nadien nog expliciet bevestigen (blijft daarom,
+        // bewust anders dan hieronder, volledig verborgen tot dan).
         await EntryFactory.upgradeStubMetFormulier(gekozenStub.id, opgeschoond);
         ActivityFactory.log({
           type: 'entry',
@@ -95,11 +97,16 @@ export default function ToevoegenPage() {
           omschrijving: `"${opgeschoond.naam}" — koppeling wacht op bevestiging door de beheerder.`,
         });
       } else {
-        await EntryFactory.create(opgeschoond);
+        // Meteen zichtbaar (met een "wacht op goedkeuring"-label) i.p.v.
+        // pas na nazicht door de beheerder -- er is hier geen scan/OCR die
+        // eerst gecontroleerd moet worden.
+        const nieuwId = await EntryFactory.createPublicSubmission(opgeschoond);
+        setNieuwEntryId(nieuwId);
         ActivityFactory.log({
           type: 'entry',
           actie: 'Nieuw vriendenboekje-formulier ingediend',
-          omschrijving: `"${opgeschoond.naam}" — wacht op goedkeuring.`,
+          itemId: nieuwId,
+          omschrijving: `"${opgeschoond.naam}" — al zichtbaar, wacht op goedkeuring.`,
         });
       }
       setVerzonden(true);
@@ -129,15 +136,46 @@ export default function ToevoegenPage() {
               padding: '40px 32px',
             }}
           >
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🙌</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>{gekozenStub ? '🔍' : '🙌'}</div>
             <h1 style={{ fontFamily: fonts.display, fontSize: 26, fontWeight: 700, color: colors.ink, margin: '0 0 10px' }}>
-              Bedankt!
+              {gekozenStub ? 'Bijna klaar!' : 'Bedankt!'}
             </h1>
-            <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, lineHeight: 1.5 }}>
-              {gekozenStub
-                ? 'Je gegevens zijn gekoppeld aan de bestaande fiche en verstuurd. De beheerder moet die koppeling nog bevestigen en de gegevens nakijken voor ze zichtbaar worden — dat kan soms wel eventjes duren, dus even geduld.'
-                : 'Je gegevens zijn verstuurd. De beheerder van het vriendenboekje moet ze nog even nakijken voor ze zichtbaar worden — dat kan soms wel eventjes duren, dus even geduld.'}
-            </p>
+            {gekozenStub ? (
+              <>
+                <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, lineHeight: 1.5 }}>
+                  Je gegevens zijn verstuurd, maar staan <strong>nog niet meteen online</strong>.
+                </p>
+                <p style={{ fontFamily: fonts.body, fontSize: 13, color: colors.inkMuted, lineHeight: 1.5, textAlign: 'left', background: colors.paper, borderRadius: radius.input, padding: '10px 14px', marginTop: 10 }}>
+                  Waarom? Je koppelde je antwoord aan een naam die al eerder
+                  ergens getagd werd (op een foto of in een leidingsploeg).
+                  Daardoor worden automatisch een aantal bestaande koppelingen
+                  aan jouw fiche gelegd — en dat wil de beheerder eerst even
+                  controleren, om zeker te zijn dat het ook echt om dezelfde
+                  persoon gaat. Dat kan soms wel eventjes duren.
+                </p>
+              </>
+            ) : (
+              <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, lineHeight: 1.5 }}>
+                Je fiche staat al online! De beheerder kijkt ze binnenkort nog
+                even na — zolang dat nog niet gebeurd is, zie je daar zelf een
+                klein "wacht op goedkeuring"-label bij staan.
+              </p>
+            )}
+            {nieuwEntryId && (
+              <Link
+                href={`/entry/${nieuwEntryId}`}
+                style={{
+                  display: 'inline-block',
+                  marginTop: 14,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: colors.forest,
+                }}
+              >
+                → Bekijk je eigen fiche
+              </Link>
+            )}
             <Link
               href="/vriendenboekje"
               style={{
@@ -178,8 +216,8 @@ export default function ToevoegenPage() {
           <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, maxWidth: 440, margin: '0 auto' }}>
             Had je geen papieren formulier ingevuld op de reünie, maar wil je
             toch in het vriendenboekje staan? Vul hieronder dezelfde vragen
-            in. Na het versturen kijkt de beheerder alles even na voor het
-            gepubliceerd wordt.
+            in. Je fiche komt na het versturen meteen online te staan (met
+            een "wacht op goedkeuring"-label tot de beheerder ze even nakeek).
           </p>
         </div>
 
