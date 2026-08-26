@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { EntryFactory, LocationFactory } from '../../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import { toTextArray } from '../../../lib/utils';
@@ -22,11 +23,21 @@ const TABS = [
 ];
 
 function VriendenboekContent() {
+  const router = useRouter();
   const [entries, setEntries] = useState([]);
   const [gekoppeldeLocaties, setGekoppeldeLocaties] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('alle'); // alle | draft | published
   const [kampplaatsFilter, setKampplaatsFilter] = useState('alle'); // alle | niet-gekoppeld
+
+  // Laat toe om vanaf bv. het dashboard rechtstreeks te linken naar een
+  // voorgefilterd overzicht, bv. /beheer/vriendenboek?status=draft
+  useEffect(() => {
+    if (!router.isReady) return;
+    const { status, kampplaats } = router.query;
+    if (status && ['alle', 'draft', 'published', 'stub'].includes(status)) setStatusFilter(status);
+    if (kampplaats && ['alle', 'niet-gekoppeld'].includes(kampplaats)) setKampplaatsFilter(kampplaats);
+  }, [router.isReady, router.query]);
 
   const load = async () => {
     setLoading(true);
