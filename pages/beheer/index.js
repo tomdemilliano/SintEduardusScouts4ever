@@ -77,7 +77,7 @@ function DashboardContent() {
       const lijst = [];
       if (conceptEntries.length > 0) {
         lijst.push({
-          href: '/beheer/vriendenboek',
+          href: '/beheer/vriendenboek?status=draft',
           label: `${conceptEntries.length} vriendenboek-formulier${conceptEntries.length === 1 ? '' : 'en'} wachten op publicatie`,
           icon: '📖',
         });
