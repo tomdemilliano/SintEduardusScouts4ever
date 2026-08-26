@@ -99,6 +99,10 @@ function ActiviteitContent() {
   const linkVoor = (a) => {
     if (a.type === 'foto' && a.itemId) return `/fotos/${a.itemId}`;
     if (a.type === 'entry' && a.itemId) return `/entry/${a.itemId}`;
+    if (a.type === 'leiding' && a.itemId) {
+      const [takId, jaarStr] = a.itemId.split('_');
+      if (takId && jaarStr) return `/tijdlijn?leidingTak=${takId}&leidingJaar=${jaarStr}`;
+    }
     return null;
   };
 
