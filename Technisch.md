@@ -255,3 +255,32 @@ plaats van dit vanaf nul te herdenken.
   *een* document bestaat voor die naam (niet of er coördinaten zijn),
   tellen genegeerde plaatsen automatisch niet meer mee als "nog te
   koppelen" — zonder dat die tellingen zelf moesten aangepast worden.
+
+## 9. Goedkeuringsflow vriendenboekje-formulieren (gewijzigd)
+
+Het publieke `/toevoegen`-formulier (geen scan/OCR) publiceert een nieuwe
+fiche voortaan **meteen** (`status: 'published'`), maar met een nieuw
+veld **`goedgekeurd: false`** tot de beheerder het nakeek. Zolang dat zo
+is, toont de publieke fiche (en de kaart op `/vriendenboekje`) een
+"⏳ Wacht op goedkeuring"-label. In het beheer heet de filter/telling
+hiervoor **"Goed te keuren"** (i.p.v. het vroegere "Concepten") en omvat
+nu twee gevallen samen:
+- `status: 'draft'` — een door de beheerder opgeladen scan, nog niet
+  gepubliceerd (deze flow bleef **ongewijzigd**: hier is bewust nog een
+  nakijkstap nodig vóór het publiek zichtbaar wordt, want de automatische
+  tekstherkenning kan fouten bevatten).
+- `status: 'published'`, `goedgekeurd: false` — een publiek ingediend
+  formulier, al zichtbaar, wacht enkel nog op een bevestiging.
+
+`EntryFactory.keurGoed(id)` zet enkel `goedgekeurd: true` (geen
+statuswijziging, want de fiche was al gepubliceerd). Bestaande fiches
+zonder het veld `goedgekeurd` worden overal als "goedgekeurd" behandeld
+(`entry.goedgekeurd === false` faalt voor `undefined`) — geen
+migratiescript nodig.
+
+De "ben je misschien X?"-koppeling (stub → volledige fiche) volgt
+bewust een **strengere** flow en bleef ongewijzigd: die blijft volledig
+verborgen (`status: 'draft'`) tot de beheerder de koppeling expliciet
+bevestigt via `koppelingBevestigd`, omdat een foute koppeling daar
+iemands foto-/leidingsploeg-geschiedenis aan de verkeerde naam zou
+hangen.
