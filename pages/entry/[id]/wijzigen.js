@@ -238,11 +238,6 @@ export default function WijzigenPage() {
             />
           </div>
 
-          <Veld label="Je e-mailadres" value={email} onChange={setEmail} placeholder="jouw@email.be" />
-          <p style={{ fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, margin: '-10px 0 0' }}>
-            Enkel zichtbaar voor de beheerder, voor eventuele controle — niet publiek.
-          </p>
-
           {/* Honeypot: onzichtbaar voor mensen, wordt vaak automatisch ingevuld door bots */}
           <div
             aria-hidden="true"
@@ -259,12 +254,34 @@ export default function WijzigenPage() {
             />
           </div>
 
-          <div style={{ border: `1px dashed ${colors.line}`, borderRadius: radius.card, padding: '14px 16px' }}>
-            <Label>Even controleren dat je geen robot bent</Label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontFamily: fonts.body, fontSize: 14, color: colors.ink }}>
-                Hoeveel is {som.a} + {som.b}?
-              </span>
+          <div style={{ border: `1px dashed ${colors.line}`, borderRadius: radius.card, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <Label>Ter controle van dit voorstel</Label>
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  color: colors.ink,
+                  marginBottom: 6,
+                }}
+              >
+                Jouw e-mailadres — niet dat van {entry.naam}. Enkel zichtbaar
+                voor de beheerder, om je eventueel te kunnen contacteren over
+                dit voorstel, nooit publiek.
+              </label>
+              <input
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="jouw@email.be"
+                style={{ ...inputStyle, width: '100%' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontFamily: fonts.body, fontSize: 13, color: colors.ink, marginBottom: 6 }}>
+                En even controleren dat je geen robot bent — hoeveel is {som.a} + {som.b}?
+              </label>
               <input
                 type="text"
                 inputMode="numeric"
