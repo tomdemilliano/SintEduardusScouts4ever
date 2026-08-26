@@ -31,11 +31,11 @@ function VriendenboekContent() {
   const [kampplaatsFilter, setKampplaatsFilter] = useState('alle'); // alle | niet-gekoppeld
 
   // Laat toe om vanaf bv. het dashboard rechtstreeks te linken naar een
-  // voorgefilterd overzicht, bv. /beheer/vriendenboek?status=draft
+  // voorgefilterd overzicht, bv. /beheer/vriendenboek?status=goedtekeuren
   useEffect(() => {
     if (!router.isReady) return;
     const { status, kampplaats } = router.query;
-    if (status && ['alle', 'draft', 'published', 'stub'].includes(status)) setStatusFilter(status);
+    if (status && ['alle', 'goedtekeuren', 'published', 'stub'].includes(status)) setStatusFilter(status);
     if (kampplaats && ['alle', 'niet-gekoppeld'].includes(kampplaats)) setKampplaatsFilter(kampplaats);
   }, [router.isReady, router.query]);
 
@@ -60,6 +60,19 @@ function VriendenboekContent() {
     await EntryFactory.unpublish(id);
     load();
   };
+
+  const handleKeurGoed = async (id) => {
+    await EntryFactory.keurGoed(id);
+    load();
+  };
+
+  /**
+   * Een fiche is "goed te keuren" in twee gevallen: een door de beheerder
+   * opgeladen scan die nog niet gepubliceerd is (status 'draft'), of een
+   * publiek ingediend formulier dat al zichtbaar is maar nog niet
+   * expliciet nagekeken (status 'published', goedgekeurd: false).
+   */
+  const isGoedTeKeuren = (entry) => entry.status === 'draft' || (entry.status === 'published' && entry.goedgekeurd === false);
 
   const handleDelete = async (entry) => {
     if (entry.status === 'stub') {
@@ -87,7 +100,9 @@ function VriendenboekContent() {
 
   const gefilterd = useMemo(() => {
     return entries.filter((entry) => {
-      if (statusFilter !== 'alle' && entry.status !== statusFilter) return false;
+      if (statusFilter === 'goedtekeuren' && !isGoedTeKeuren(entry)) return false;
+      if (statusFilter === 'published' && !(entry.status === 'published' && entry.goedgekeurd !== false)) return false;
+      if (statusFilter === 'stub' && entry.status !== 'stub') return false;
       if (kampplaatsFilter === 'niet-gekoppeld') {
         const { type } = kampplaatsStatus(entry);
         if (type !== 'niet' && type !== 'deels') return false;
@@ -97,7 +112,7 @@ function VriendenboekContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, statusFilter, kampplaatsFilter, gekoppeldeLocaties]);
 
-  const aantalDraft = entries.filter((e) => e.status === 'draft').length;
+  const aantalGoedTeKeuren = entries.filter(isGoedTeKeuren).length;
   const aantalStub = entries.filter((e) => e.status === 'stub').length;
   const aantalNietGekoppeld = entries.filter((e) => {
     const { type } = kampplaatsStatus(e);
@@ -128,8 +143,8 @@ function VriendenboekContent() {
             <FilterButton active={statusFilter === 'alle'} onClick={() => setStatusFilter('alle')}>
               Alle
             </FilterButton>
-            <FilterButton active={statusFilter === 'draft'} onClick={() => setStatusFilter('draft')}>
-              Concepten {aantalDraft > 0 && `(${aantalDraft})`}
+            <FilterButton active={statusFilter === 'goedtekeuren'} onClick={() => setStatusFilter('goedtekeuren')}>
+              Goed te keuren {aantalGoedTeKeuren > 0 && `(${aantalGoedTeKeuren})`}
             </FilterButton>
             <FilterButton active={statusFilter === 'published'} onClick={() => setStatusFilter('published')}>
               Gepubliceerd
@@ -183,11 +198,15 @@ function VriendenboekContent() {
                     <span>{entry.periode || 'periode onbekend'}</span>
                     <span
                       style={{
-                        color: entry.status === 'published' ? colors.forest : entry.status === 'stub' ? colors.campfire : colors.inkMuted,
+                        color: isGoedTeKeuren(entry) || entry.status === 'stub' ? colors.campfire : colors.forest,
                         fontWeight: 600,
                       }}
                     >
-                      {entry.status === 'published' ? 'Gepubliceerd' : entry.status === 'stub' ? 'Getagd, geen fiche' : 'Concept'}
+                      {isGoedTeKeuren(entry)
+                        ? 'Goed te keuren'
+                        : entry.status === 'stub'
+                        ? 'Getagd, geen fiche'
+                        : 'Gepubliceerd'}
                     </span>
                     <KampplaatsBadge status={kampplaatsInfo} />
                   </div>
@@ -199,13 +218,19 @@ function VriendenboekContent() {
                       <Link href={`/beheer/vriendenboek/${entry.id}`} style={btnStyleOutline}>
                         Bewerken
                       </Link>
-                      {entry.status === 'published' ? (
-                        <button onClick={() => handleUnpublish(entry.id)} style={btnStyle(colors.inkMuted)}>
-                          Depubliceren
-                        </button>
-                      ) : (
+                      {entry.status === 'draft' && (
                         <button onClick={() => handlePublish(entry.id)} style={btnStyle(colors.forest)}>
                           Publiceren
+                        </button>
+                      )}
+                      {entry.status === 'published' && entry.goedgekeurd === false && (
+                        <button onClick={() => handleKeurGoed(entry.id)} style={btnStyle(colors.forest)}>
+                          ✓ Goedkeuren
+                        </button>
+                      )}
+                      {entry.status === 'published' && (
+                        <button onClick={() => handleUnpublish(entry.id)} style={btnStyle(colors.inkMuted)}>
+                          Depubliceren
                         </button>
                       )}
                     </>
