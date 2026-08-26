@@ -13,11 +13,13 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
 
       // Publiek aanmeldformulier (/toevoegen): niet-ingelogde bezoekers mogen
-      // een NIEUWE entry aanmaken, maar altijd als concept, zonder scan, en
-      // met beperkte veldgroottes — de beheerder moet dit nog goedkeuren
-      // via /beheer voor het zichtbaar wordt. Geen read, update of delete.
+      // een NIEUWE entry aanmaken -- meteen zichtbaar ("published"), maar
+      // met goedgekeurd: false, zodat de publieke fiche een "wacht op
+      // goedkeuring"-label toont tot de beheerder het nakeek. Altijd zonder
+      // scan, en met beperkte veldgroottes. Geen read, update of delete.
       allow create: if request.auth == null
-        && request.resource.data.status == 'draft'
+        && request.resource.data.status == 'published'
+        && request.resource.data.goedgekeurd == false
         && request.resource.data.scanUrl == null
         && request.resource.data.scanPath == null
         && request.resource.data.naam is string
@@ -157,6 +159,30 @@ service cloud.firestore {
         && request.resource.data.bericht.size() > 0
         && request.resource.data.bericht.size() < 2000
         && request.resource.data.gelezen == false;
+    }
+
+    match /wijzigingsVoorstellen/{voorstelId} {
+      // Enkel de beheerder mag voorstellen bekijken/goedkeuren/weigeren.
+      // Iedereen mag een voorstel indienen voor een bestaande, gepubliceerde
+      // fiche (zonder in te loggen), met een verplicht e-mailadres (voor
+      // eventuele controle door de beheerder) en beperkte veldgroottes --
+      // dit voorstel wijzigt de echte fiche zelf nooit rechtstreeks.
+      allow read, write: if request.auth != null;
+      allow create: if request.resource.data.entryId is string
+        && exists(/databases/$(database)/documents/entries/$(request.resource.data.entryId))
+        && get(/databases/$(database)/documents/entries/$(request.resource.data.entryId)).data.status == 'published'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 0
+        && request.resource.data.email.size() < 200
+        && request.resource.data.naam is string
+        && request.resource.data.naam.size() < 200
+        && request.resource.data.geboortejaar.size() < 20
+        && request.resource.data.totemnaam.size() < 100
+        && request.resource.data.periode.size() < 100
+        && request.resource.data.leuksteActiviteit.size() < 500
+        && request.resource.data.besteKampplaats.size() < 10
+        && request.resource.data.lekkersteEten.size() < 10;
     }
 
     match /activiteiten/{activiteitId} {

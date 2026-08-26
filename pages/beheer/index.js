@@ -10,6 +10,7 @@ import {
   LinkFactory,
   PhotoFactory,
   ContactFactory,
+  WijzigingFactory,
 } from '../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../lib/theme';
 import { toTextArray, huidigWerkingsjaarStart } from '../../lib/utils';
@@ -38,7 +39,8 @@ function DashboardContent() {
       LinkFactory.getAll(),
       PhotoFactory.getAllAdmin(),
       ContactFactory.getAll(),
-    ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links, fotos, contactBerichten]) => {
+      WijzigingFactory.getAll(),
+    ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links, fotos, contactBerichten, wijzigingen]) => {
       const gepubliceerdeEntries = entries.filter((e) => e.status === 'published');
       const conceptEntries = entries.filter(
         (e) => e.status === 'draft' || (e.status === 'published' && e.goedgekeurd === false)
@@ -132,6 +134,13 @@ function DashboardContent() {
           href: '/beheer/contact',
           label: `${ongelezenContact.length} nieuw${ongelezenContact.length === 1 ? '' : 'e'} contactbericht${ongelezenContact.length === 1 ? '' : 'en'}`,
           icon: '✉️',
+        });
+      }
+      if (wijzigingen.length > 0) {
+        lijst.push({
+          href: '/beheer/vriendenboek/wijzigingen',
+          label: `${wijzigingen.length} wijzigingsvoorstel${wijzigingen.length === 1 ? '' : 'len'} om na te kijken`,
+          icon: '✏️',
         });
       }
       setTodos(lijst);
