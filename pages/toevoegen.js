@@ -378,24 +378,37 @@ export default function ToevoegenPage() {
             <div style={{ color: colors.stamp, fontFamily: fonts.body, fontSize: 13 }}>{foutmelding}</div>
           )}
 
-          <button
-            onClick={handleVerstuur}
-            disabled={versturen}
-            style={{
-              alignSelf: 'flex-start',
-              padding: '12px 24px',
-              borderRadius: radius.badge,
-              border: 'none',
-              background: versturen ? colors.inkMuted : colors.forest,
-              color: colors.white,
-              fontFamily: fonts.body,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: versturen ? 'default' : 'pointer',
-            }}
-          >
-            {versturen ? 'Bezig met versturen…' : 'Versturen'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button
+              onClick={handleVerstuur}
+              disabled={versturen}
+              style={{
+                padding: '12px 24px',
+                borderRadius: radius.badge,
+                border: 'none',
+                background: versturen ? colors.inkMuted : colors.forest,
+                color: colors.white,
+                fontFamily: fonts.body,
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: versturen ? 'default' : 'pointer',
+              }}
+            >
+              {versturen ? 'Bezig met versturen…' : 'Versturen'}
+            </button>
+            <Link
+              href="/vriendenboekje"
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 13,
+                fontWeight: 600,
+                color: colors.inkMuted,
+                textDecoration: 'underline',
+              }}
+            >
+              Annuleren
+            </Link>
+          </div>
         </div>
       </div>
     </div>
