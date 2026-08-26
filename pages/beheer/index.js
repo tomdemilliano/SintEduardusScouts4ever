@@ -40,7 +40,9 @@ function DashboardContent() {
       ContactFactory.getAll(),
     ]).then(([entries, locaties, extraLocaties, mijlpalen, kentekens, links, fotos, contactBerichten]) => {
       const gepubliceerdeEntries = entries.filter((e) => e.status === 'published');
-      const conceptEntries = entries.filter((e) => e.status === 'draft');
+      const conceptEntries = entries.filter(
+        (e) => e.status === 'draft' || (e.status === 'published' && e.goedgekeurd === false)
+      );
       const stubEntries = entries.filter((e) => e.status === 'stub');
 
       const gekoppeldeLocaties = new Set(locaties.map((l) => l.id));
@@ -77,8 +79,8 @@ function DashboardContent() {
       const lijst = [];
       if (conceptEntries.length > 0) {
         lijst.push({
-          href: '/beheer/vriendenboek?status=draft',
-          label: `${conceptEntries.length} vriendenboek-formulier${conceptEntries.length === 1 ? '' : 'en'} wachten op publicatie`,
+          href: '/beheer/vriendenboek?status=goedtekeuren',
+          label: `${conceptEntries.length} vriendenboek-formulier${conceptEntries.length === 1 ? '' : 'en'} goed te keuren`,
           icon: '📖',
         });
       }
@@ -211,7 +213,7 @@ function DashboardContent() {
                 }}
               >
                 <StatKaart label="Leden gepubliceerd" waarde={stats.entriesGepubliceerd} icon="📖" href="/beheer/vriendenboek" />
-                <StatKaart label="Concepten" waarde={stats.entriesConcept} icon="📝" href="/beheer/vriendenboek" />
+                <StatKaart label="Goed te keuren" waarde={stats.entriesConcept} icon="📝" href="/beheer/vriendenboek?status=goedtekeuren" />
                 <StatKaart label="Getagd, geen fiche" waarde={stats.entriesStub} icon="🏷️" href="/beheer/vriendenboek" />
                 <StatKaart label="Kampplaatsen gekoppeld" waarde={stats.kampplaatsenGekoppeld} icon="❤️" href="/beheer/kampplaatsen" />
                 <StatKaart label="Extra kampplaatsen" waarde={stats.extraLocatiesGepubliceerd} icon="📍" href="/beheer/kampplaatsen/extra" />
