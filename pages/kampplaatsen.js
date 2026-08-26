@@ -32,7 +32,7 @@ export default function KampplaatsenPage() {
         const likePins = grouped
           .map((g) => {
             const loc = locByNorm[g.label.trim().toLowerCase()];
-            if (!loc) return null;
+            if (!loc || loc.genegeerd || loc.lat == null || loc.lng == null) return null;
             return {
               naam: g.label,
               lat: loc.lat,
