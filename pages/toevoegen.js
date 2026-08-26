@@ -211,13 +211,13 @@ export default function ToevoegenPage() {
 
         <div style={{ textAlign: 'center', margin: '28px 0 32px' }}>
           <h1 style={{ fontFamily: fonts.display, fontSize: 34, fontWeight: 700, color: colors.ink, margin: '0 0 8px' }}>
-            Vul jezelf in
+            Voeg jezelf toe
           </h1>
           <p style={{ fontFamily: fonts.body, fontSize: 14, color: colors.inkMuted, maxWidth: 440, margin: '0 auto' }}>
-            Had je geen papieren formulier ingevuld op de reünie, maar wil je
-            toch in het vriendenboekje staan? Vul hieronder dezelfde vragen
-            in. Je fiche komt na het versturen meteen online te staan (met
-            een "wacht op goedkeuring"-label tot de beheerder ze even nakeek).
+            Sta je nog niet in het vriendenboekje, maar wil je er graag bij
+            horen? Vul hieronder je gegevens in. Je fiche komt meteen online
+            te staan (met een "wacht op goedkeuring"-label tot de beheerder
+            ze even bekeken heeft).
           </p>
         </div>
 
