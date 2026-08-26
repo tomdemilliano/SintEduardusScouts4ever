@@ -236,3 +236,22 @@ onboarding, en een business-model). Dat is bewust **niet** geïmplementeerd
 — de huidige toepassing blijft single-tenant (enkel Sint-Eduardusscouts).
 Mocht dit ooit actueel worden, begin dan bij die eerdere analyse in
 plaats van dit vanaf nul te herdenken.
+
+## 8. Kleine nabranders (na de eerste lancering)
+
+- **Dashboard-links filteren meteen door**: `/beheer/vriendenboek`
+  ondersteunt de query-parameters `?status=` (`draft`/`published`/`stub`)
+  en `?kampplaats=niet-gekoppeld`, zodat een link vanaf het dashboard
+  meteen het juiste filter toont in plaats van enkel het algemene
+  overzicht.
+- **Activiteitenlog linkt door naar leidingsploegen**: `/tijdlijn`
+  ondersteunt `?leidingTak={takId}&leidingJaar={jaar}` om een specifieke
+  leidingsploeg automatisch te openen en ernaartoe te scrollen — gebruikt
+  door `/beheer/activiteit` se "bekijken →"-link bij dat type activiteit.
+- **Kampplaatsen "geen koppeling nodig"**: `LocationFactory.markeerGenegeerd(naam)`
+  maakt een locatie-document aan met `lat`/`lng: null` en `genegeerd: true`
+  — voor namen die geen echte plaats zijn (bv. "Allemaal"). Omdat de
+  bestaande "is dit gekoppeld?"-tellingen overal enkel controleren of er
+  *een* document bestaat voor die naam (niet of er coördinaten zijn),
+  tellen genegeerde plaatsen automatisch niet meer mee als "nog te
+  koppelen" — zonder dat die tellingen zelf moesten aangepast worden.
