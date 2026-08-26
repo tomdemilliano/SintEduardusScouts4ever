@@ -181,6 +181,24 @@ export default function EntryDetailPage() {
                   .
                 </p>
               )}
+              {entry.status === 'published' && entry.goedgekeurd === false && (
+                <p
+                  style={{
+                    display: 'inline-block',
+                    fontFamily: fonts.body,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: colors.campfire,
+                    background: colors.campfireLight,
+                    border: `1px solid ${colors.campfire}`,
+                    borderRadius: radius.badge,
+                    padding: '4px 12px',
+                    margin: '8px 0 0',
+                  }}
+                >
+                  ⏳ Wacht op goedkeuring van de beheerder
+                </p>
+              )}
             </div>
             {entry.totemnaam && (
               <div
