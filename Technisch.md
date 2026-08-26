@@ -284,3 +284,34 @@ verborgen (`status: 'draft'`) tot de beheerder de koppeling expliciet
 bevestigt via `koppelingBevestigd`, omdat een foute koppeling daar
 iemands foto-/leidingsploeg-geschiedenis aan de verkeerde naam zou
 hangen.
+
+## 10. Wijzigingsvoorstellen op een gepubliceerde vriendenboekje-fiche
+
+In tegenstelling tot foto's/leidingsploegen (die publiek rechtstreeks
+bewerkbaar zijn) is een **al gepubliceerde vriendenboekje-fiche niet
+rechtstreeks door bezoekers aan te passen** — dat gaat via een apart
+goedkeuringstraject:
+
+- **`/entry/[id]/wijzigen`** (nieuw): een bezoeker past de gegevens aan
+  in een vooraf ingevuld formulier (zelfde velden als `/toevoegen`), vult
+  verplicht een e-mailadres in (enkel zichtbaar voor de beheerder, voor
+  eventuele controle), en verstuurt. Dit verandert de echte fiche
+  **niet** — het maakt een document aan in de nieuwe collectie
+  `wijzigingsVoorstellen` (`WijzigingFactory`), met `status: 'pending'`.
+- **`/beheer/vriendenboek/wijzigingen`** (nieuw tabblad): toont per
+  voorstel enkel de **effectief gewijzigde velden**, als "oud → nieuw".
+  **Goedkeuren** past de voorgestelde velden toe op de echte fiche
+  (via het bestaande `EntryFactory.update()`) en verwijdert het
+  voorstel; **Weigeren** verwijdert het voorstel gewoon, zonder de fiche
+  aan te raken (zelfde conventie als "Afwijzen" bij andere
+  goedkeuringswachtrijen in de app).
+- Firestore-rules: publieke *create* op `wijzigingsVoorstellen` is enkel
+  toegestaan als de gerefereerde `entryId` effectief bestaat én
+  `status: 'published'` heeft (via `exists()`/`get()` in de rule zelf),
+  met verplicht e-mailadres en beperkte veldgroottes. Enkel de beheerder
+  mag lezen/goedkeuren/weigeren.
+
+Deze scheiding (voorstel als apart document, nooit een rechtstreekse
+schrijfactie op `entries`) is bewust: zo kan een gepubliceerde fiche
+nooit ongemerkt fout aangepast worden, in tegenstelling tot de losser
+crowdsourcede foto's/leidingsploegen.
