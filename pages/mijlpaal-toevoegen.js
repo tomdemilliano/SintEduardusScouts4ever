@@ -55,7 +55,7 @@ export default function MijlpaalToevoegenPage() {
 
     setVersturen(true);
     try {
-      await MijlpaalFactory.createPublic({
+      const nieuwId = await MijlpaalFactory.createPublic({
         jaar: jaarNum,
         titel: titel.trim(),
         beschrijving: beschrijving.trim(),
@@ -65,6 +65,7 @@ export default function MijlpaalToevoegenPage() {
       ActivityFactory.log({
         type: 'mijlpaal',
         actie: 'Nieuwe mijlpaal voorgesteld',
+        itemId: nieuwId,
         omschrijving: `${jaarNum} — "${titel.trim()}" — wacht op goedkeuring.`,
       });
       setVerzonden(true);
