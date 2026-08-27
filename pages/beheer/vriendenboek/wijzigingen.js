@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { EntryFactory, WijzigingFactory } from '../../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import RequireAuth from '../../../components/RequireAuth';
@@ -36,6 +37,7 @@ export default function WijzigingenPage() {
 }
 
 function WijzigingenContent() {
+  const router = useRouter();
   const [voorstellen, setVoorstellen] = useState([]);
   const [entries, setEntries] = useState({});
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,21 @@ function WijzigingenContent() {
   useEffect(() => {
     load();
   }, []);
+
+  // Vanuit het activiteitenlog rechtstreeks naar het betrokken voorstel springen.
+  useEffect(() => {
+    if (!router.isReady || loading) return;
+    const { entry } = router.query;
+    if (entry) {
+      const timer = setTimeout(() => {
+        document.getElementById(`voorstel-entry-${entry}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query, loading]);
+
+  const gemarkeerdeEntryId = router.query.entry;
 
   const handleGoedkeuren = async (voorstel) => {
     setBezigVoor(voorstel.id);
@@ -137,11 +154,13 @@ function WijzigingenContent() {
             return (
               <div
                 key={voorstel.id}
+                id={`voorstel-entry-${voorstel.entryId}`}
                 style={{
                   background: colors.campfireLight,
                   border: `1.5px dashed ${colors.campfire}`,
                   borderRadius: radius.card,
                   padding: '16px 18px',
+                  outline: gemarkeerdeEntryId === voorstel.entryId ? `3px solid ${colors.forest}` : 'none',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
