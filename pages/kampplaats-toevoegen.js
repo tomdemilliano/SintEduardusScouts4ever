@@ -76,7 +76,7 @@ export default function KampplaatsToevoegenPage() {
 
     setVersturen(true);
     try {
-      await ExtraLocationFactory.createPublic({
+      const nieuwId = await ExtraLocationFactory.createPublic({
         naam: naam.trim(),
         beschrijving: beschrijving.trim(),
         lat,
@@ -86,6 +86,7 @@ export default function KampplaatsToevoegenPage() {
       ActivityFactory.log({
         type: 'kampplaats',
         actie: 'Nieuwe kampplaats voorgesteld',
+        itemId: nieuwId,
         omschrijving: `"${naam.trim()}" — wacht op goedkeuring.`,
       });
       setVerzonden(true);
