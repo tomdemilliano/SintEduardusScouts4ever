@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { ExtraLocationFactory } from '../../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import RequireAuth from '../../../components/RequireAuth';
@@ -22,6 +23,7 @@ export default function ExtraLocatiesPage() {
 }
 
 function ExtraLocatiesContent() {
+  const router = useRouter();
   const [locaties, setLocaties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [bewerkId, setBewerkId] = useState(null);
@@ -35,6 +37,21 @@ function ExtraLocatiesContent() {
   useEffect(() => {
     load();
   }, []);
+
+  // Vanuit het activiteitenlog rechtstreeks naar de betrokken kampplaats springen.
+  useEffect(() => {
+    if (!router.isReady || loading) return;
+    const { locatie } = router.query;
+    if (locatie) {
+      const timer = setTimeout(() => {
+        document.getElementById(`locatie-${locatie}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query, loading]);
+
+  const gemarkeerdeLocatieId = router.query.locatie;
 
   const handleVerwijderen = async (loc) => {
     if (!confirm(`"${loc.naam}" verwijderen?`)) return;
@@ -88,11 +105,13 @@ function ExtraLocatiesContent() {
                 ) : (
                   <div
                     key={loc.id}
+                    id={`locatie-${loc.id}`}
                     style={{
                       background: colors.campfireLight,
                       border: `1.5px dashed ${colors.campfire}`,
                       borderRadius: radius.card,
                       padding: '14px 18px',
+                      outline: gemarkeerdeLocatieId === loc.id ? `3px solid ${colors.forest}` : 'none',
                     }}
                   >
                     <div style={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 600, color: colors.ink }}>
@@ -154,6 +173,7 @@ function ExtraLocatiesContent() {
             ) : (
               <div
                 key={loc.id}
+                id={`locatie-${loc.id}`}
                 style={{
                   background: colors.paperCard,
                   border: `1px solid ${colors.line}`,
@@ -164,6 +184,7 @@ function ExtraLocatiesContent() {
                   alignItems: 'center',
                   gap: 10,
                   flexWrap: 'wrap',
+                  outline: gemarkeerdeLocatieId === loc.id ? `3px solid ${colors.forest}` : 'none',
                 }}
               >
                 <div>
