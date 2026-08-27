@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { MijlpaalFactory } from '../../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import RequireAuth from '../../../components/RequireAuth';
@@ -26,6 +27,7 @@ const TYPE_LABEL = { scouting: 'Scouting-mijlpaal', groep: 'Groeps-mijlpaal' };
 const leegNieuw = { jaar: '', titel: '', beschrijving: '', type: 'groep' };
 
 function MijlpalenContent() {
+  const router = useRouter();
   const [mijlpalen, setMijlpalen] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nieuw, setNieuw] = useState(leegNieuw);
@@ -43,6 +45,21 @@ function MijlpalenContent() {
   useEffect(() => {
     load();
   }, []);
+
+  // Vanuit het activiteitenlog rechtstreeks naar de betrokken mijlpaal springen.
+  useEffect(() => {
+    if (!router.isReady || loading) return;
+    const { mijlpaal } = router.query;
+    if (mijlpaal) {
+      const timer = setTimeout(() => {
+        document.getElementById(`mijlpaal-${mijlpaal}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query, loading]);
+
+  const gemarkeerdeMijlpaalId = router.query.mijlpaal;
 
   const handleToevoegen = async () => {
     setFoutmelding(null);
@@ -138,11 +155,13 @@ function MijlpalenContent() {
                 ) : (
                   <div
                     key={m.id}
+                    id={`mijlpaal-${m.id}`}
                     style={{
                       background: colors.campfireLight,
                       border: `1.5px dashed ${colors.campfire}`,
                       borderRadius: radius.card,
                       padding: '14px 18px',
+                      outline: gemarkeerdeMijlpaalId === m.id ? `3px solid ${colors.forest}` : 'none',
                     }}
                   >
                     <div style={{ fontFamily: fonts.display, fontSize: 17, fontWeight: 600, color: colors.ink }}>
@@ -264,6 +283,7 @@ function MijlpalenContent() {
             ) : (
               <div
                 key={m.id}
+                id={`mijlpaal-${m.id}`}
                 style={{
                   background: colors.paperCard,
                   border: `1px solid ${colors.line}`,
@@ -272,6 +292,7 @@ function MijlpalenContent() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 12,
+                  outline: gemarkeerdeMijlpaalId === m.id ? `3px solid ${colors.forest}` : 'none',
                 }}
               >
                 {m.afbeeldingUrl && (
