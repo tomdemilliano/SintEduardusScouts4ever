@@ -97,11 +97,27 @@ function ActiviteitContent() {
   const gefilterd = typeFilter === 'alle' ? data : data.filter((a) => a.type === typeFilter);
 
   const linkVoor = (a) => {
-    if (a.type === 'foto' && a.itemId) return `/fotos/${a.itemId}`;
-    if (a.type === 'entry' && a.itemId) return `/entry/${a.itemId}`;
+    if (a.type === 'foto') {
+      return a.itemId ? `/beheer/fotos?foto=${a.itemId}` : '/beheer/fotos';
+    }
+    if (a.type === 'entry') {
+      // Een voorgestelde wijziging op een reeds gepubliceerde fiche wordt
+      // elders beheerd (aparte wachtrij) dan een nieuwe/gekoppelde fiche.
+      if (a.actie && a.actie.startsWith('Wijziging voorgesteld')) {
+        return a.itemId ? `/beheer/vriendenboek/wijzigingen?entry=${a.itemId}` : '/beheer/vriendenboek/wijzigingen';
+      }
+      return a.itemId ? `/beheer/vriendenboek/${a.itemId}` : '/beheer/vriendenboek';
+    }
     if (a.type === 'leiding' && a.itemId) {
       const [takId, jaarStr] = a.itemId.split('_');
-      if (takId && jaarStr) return `/tijdlijn?leidingTak=${takId}&leidingJaar=${jaarStr}`;
+      if (takId && jaarStr) return `/beheer/tijdlijn/leiding?tak=${takId}&jaar=${jaarStr}`;
+      return '/beheer/tijdlijn/leiding';
+    }
+    if (a.type === 'kampplaats') {
+      return a.itemId ? `/beheer/kampplaatsen/extra?locatie=${a.itemId}` : '/beheer/kampplaatsen/extra';
+    }
+    if (a.type === 'mijlpaal') {
+      return a.itemId ? `/beheer/tijdlijn?mijlpaal=${a.itemId}` : '/beheer/tijdlijn';
     }
     return null;
   };
