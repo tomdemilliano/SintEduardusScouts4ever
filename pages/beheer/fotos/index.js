@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { PhotoFactory, PhotoTagFactory } from '../../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import RequireAuth from '../../../components/RequireAuth';
@@ -26,6 +27,7 @@ export default function FotosBeheerPage() {
 }
 
 function FotosBeheerContent() {
+  const router = useRouter();
   const [fotos, setFotos] = useState([]);
   const [alleTags, setAlleTags] = useState([]);
   const [tagFilter, setTagFilter] = useState([]);
@@ -43,6 +45,21 @@ function FotosBeheerContent() {
   useEffect(() => {
     load();
   }, []);
+
+  // Vanuit het activiteitenlog rechtstreeks naar de betrokken foto springen.
+  useEffect(() => {
+    if (!router.isReady || loading) return;
+    const { foto: fotoId } = router.query;
+    if (fotoId) {
+      const timer = setTimeout(() => {
+        document.getElementById(`foto-${fotoId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query, loading]);
+
+  const gemarkeerdeFotoId = router.query.foto;
 
   const handleGoedkeuren = async (foto) => {
     await PhotoFactory.approve(foto.id);
@@ -89,7 +106,7 @@ function FotosBeheerContent() {
             <SectieTitel kleur={colors.campfire}>Nog goed te keuren ({pending.length})</SectieTitel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
               {pending.map((foto) => (
-                <div key={foto.id} style={{ border: `1.5px dashed ${colors.campfire}`, borderRadius: radius.card, overflow: 'hidden', background: colors.campfireLight }}>
+                <div key={foto.id} id={`foto-${foto.id}`} style={{ border: `1.5px dashed ${colors.campfire}`, borderRadius: radius.card, overflow: 'hidden', background: colors.campfireLight, outline: gemarkeerdeFotoId === foto.id ? `3px solid ${colors.forest}` : 'none' }}>
                   <ThumbOfFout url={foto.afbeeldingUrl} />
                   {foto.contactEmail && (
                     <div style={{ padding: '6px 8px', fontFamily: fonts.body, fontSize: 10, color: colors.inkMuted }}>
@@ -116,7 +133,7 @@ function FotosBeheerContent() {
             <SectieTitel kleur={colors.stamp}>Verwijderverzoeken ({verwijderVerzoeken.length})</SectieTitel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {verwijderVerzoeken.map((foto) => (
-                <div key={foto.id} style={{ display: 'flex', gap: 12, alignItems: 'center', border: `1.5px dashed ${colors.stamp}`, borderRadius: radius.card, padding: 10, background: colors.paperCard }}>
+                <div key={foto.id} id={`foto-${foto.id}`} style={{ display: 'flex', gap: 12, alignItems: 'center', border: `1.5px dashed ${colors.stamp}`, borderRadius: radius.card, padding: 10, background: colors.paperCard, outline: gemarkeerdeFotoId === foto.id ? `3px solid ${colors.forest}` : 'none' }}>
                   <div style={{ width: 60, height: 60, flexShrink: 0 }}>
                     <ThumbOfFout url={foto.afbeeldingUrl} klein />
                   </div>
@@ -147,7 +164,17 @@ function FotosBeheerContent() {
             bewerkId === foto.id ? (
               <FotoBewerkKaart key={foto.id} foto={foto} onKlaar={() => { setBewerkId(null); load(); }} />
             ) : (
-              <div key={foto.id} style={{ border: `1px solid ${colors.line}`, borderRadius: radius.card, overflow: 'hidden', background: colors.paperCard }}>
+              <div
+                key={foto.id}
+                id={`foto-${foto.id}`}
+                style={{
+                  border: `1px solid ${colors.line}`,
+                  borderRadius: radius.card,
+                  overflow: 'hidden',
+                  background: colors.paperCard,
+                  outline: gemarkeerdeFotoId === foto.id ? `3px solid ${colors.forest}` : 'none',
+                }}
+              >
                 <ThumbOfFout url={foto.afbeeldingUrl} />
                 <div style={{ padding: '6px 8px', fontFamily: fonts.body, fontSize: 11, color: colors.inkMuted, minHeight: 16 }}>
                   {[foto.jaar || (foto.decennium != null ? decenniumLabel(foto.decennium) : null), foto.locatie].filter(Boolean).join(' · ')}
