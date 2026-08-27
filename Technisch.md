@@ -315,3 +315,31 @@ Deze scheiding (voorstel als apart document, nooit een rechtstreekse
 schrijfactie op `entries`) is bewust: zo kan een gepubliceerde fiche
 nooit ongemerkt fout aangepast worden, in tegenstelling tot de losser
 crowdsourcede foto's/leidingsploegen.
+
+## 11. Activiteitenlog linkt nu naar het beheer, niet het publieke deel
+
+De "bekijken →"-link per activiteit in `/beheer/activiteit` wijst nu
+altijd naar de **overeenkomstige plek in het beheer** (niet langer naar
+de publieke pagina), met — waar mogelijk — een deep-link naar het
+specifieke item:
+
+| Activiteitstype | Link | Gedrag ter plekke |
+|---|---|---|
+| `foto` | `/beheer/fotos?foto={id}` | scrollt naar de kaart met dat ID (werkt in alle drie secties: goed te keuren, verwijderverzoeken, gepubliceerd) |
+| `entry` (nieuw/stub-koppeling) | `/beheer/vriendenboek/{id}` | opent de bewerkpagina van die fiche |
+| `entry` (wijzigingsvoorstel) | `/beheer/vriendenboek/wijzigingen?entry={id}` | scrolt naar het voorstel voor die fiche |
+| `leiding` | `/beheer/tijdlijn/leiding?tak={takId}&jaar={jaar}` | laadt die combinatie automatisch in het bewerkformulier (hergebruikt dezelfde functie als de "Bewerken"-knop) |
+| `kampplaats` | `/beheer/kampplaatsen/extra?locatie={id}` | scrolt naar die kaart |
+| `mijlpaal` | `/beheer/tijdlijn?mijlpaal={id}` | scrolt naar die kaart |
+
+Elke doelpagina leest de query-parameter via `useRouter()` in een losse
+`useEffect` (pas nadat de data geladen is), en scrollt zachtjes naar het
+element met het bijhorende `id`-attribuut op de kaart. Waar een kaart
+zowel getoond als bewerkt kan worden (foto's, kampplaatsen, mijlpalen)
+krijgt de gemarkeerde kaart ook een tijdelijke groene `outline` zolang de
+query-parameter aanwezig is.
+
+**Kanttekening**: sommige activiteiten hebben geen `itemId` (bv. een
+bulk-foto-upload van meerdere bestanden tegelijk) — die linken dan
+gewoon naar de algemene beheerpagina van dat onderdeel, zonder
+deep-link naar één specifiek item.
