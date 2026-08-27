@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { TakFactory, LeidingFactory } from '../../../lib/dbSchema';
 import { colors, fonts, fontImports, radius } from '../../../lib/theme';
 import { huidigWerkingsjaarStart, werkingsjaarLabel } from '../../../lib/utils';
@@ -23,6 +24,7 @@ export default function LeidingPage() {
 }
 
 function LeidingContent() {
+  const router = useRouter();
   const [takken, setTakken] = useState([]);
   const [leidingLijst, setLeidingLijst] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,19 @@ function LeidingContent() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Vanuit het activiteitenlog rechtstreeks naar de betrokken leidingsploeg
+  // springen: laadt 'm meteen in het bewerkformulier, zoals bij "Bewerken".
+  useEffect(() => {
+    if (!router.isReady || loading) return;
+    const { tak: takQ, jaar: jaarQ } = router.query;
+    if (takQ && jaarQ) {
+      const jaarNum = parseInt(jaarQ, 10);
+      const item = leidingLijst.find((l) => l.takId === takQ && l.werkingsjaarStart === jaarNum);
+      if (item) bewerken(item);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query, loading, leidingLijst]);
 
   const handleOpslaan = async () => {
     setFout(null);
